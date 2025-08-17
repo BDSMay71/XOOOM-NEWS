@@ -1,2 +1,10 @@
 /** @type {import('next').NextConfig} */
-export default { reactStrictMode: true };
+const nextConfig = {
+  reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '**' } // allow remote thumbnails
+    ]
+  }
+};
+export default nextConfig;
