@@ -1,8 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-type Headline = { title: string; link: string; source: string; pubDate?: string; };
+
+type Headline = { title: string; link: string; source: string; pubDate?: string; image?: string; };
 type Buckets = { political: Headline[]; financial: Headline[]; business: Headline[]; sports: Headline[]; };
 
 export default function Page() {
@@ -31,19 +31,18 @@ export default function Page() {
   }
 
   return (
-    <main>
-        <div className="brand">
-          <img src="/xooom.svg" alt="XOOOM logo" />
-          <h1>XOOOM</h1>
-        </div>
+    <>
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap'}}>
+        <h1>Top Headlines — Global & Local</h1>
         <button onClick={refresh} disabled={refreshing}>{refreshing ? 'Refreshing…' : 'Refresh'}</button>
       </div>
-      <div className="tag">Fast global & local headlines — updated throughout the day</div>
       <div className="time">{new Date().toLocaleString()}</div>
 
       {loading && <p>Loading headlines…</p>}
+
       {!loading && buckets && (
         <>
+          {/* Global sections in a responsive 1/2/3-col grid */}
           <div className="grid">
             <Section title="Global Political" items={buckets.political} />
             <Section title="Financial Markets" items={buckets.financial} />
@@ -51,12 +50,13 @@ export default function Page() {
             <Section title="Sports" items={buckets.sports} />
           </div>
 
+          {/* Local section: also uses the same responsive grid */}
           <div className="local">
             <h2>
               Local News
               {local?.geo?.city && <> — {local.geo.city}{local.geo.region ? `, ${local.geo.region}` : ''} {local.geo.country ? `• ${local.geo.country}` : ''}</>}
             </h2>
-            <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            <div className="grid">
               <Section title={`Top near ${local?.geo?.city || 'you'}`} items={(local?.headlines || []).slice(0, 24)} />
             </div>
             <div className="time">Query: {local?.query}</div>
@@ -68,7 +68,7 @@ export default function Page() {
           </div>
         </>
       )}
-    </main>
+    </>
   );
 }
 
