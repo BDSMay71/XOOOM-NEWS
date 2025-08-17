@@ -3,7 +3,7 @@ import { FEEDS } from './feeds';
 import { BucketedNews, Headline } from './types';
 import { dedupe } from './dedupe';
 
-// Tell rss-parser to keep media/enclosure fields
+// Keep enclosure/media fields from RSS
 const parser: any = new Parser({
   timeout: 10000,
   headers: { 'User-Agent': 'XOOOM/1.0 (+https://example.com)' },
