@@ -79,11 +79,43 @@ function Section({ title, items }: { title: string; items: Headline[] }) {
       <h3>{title}</h3>
       <div className="list">
         {items.slice(0, 25).map((h, i) => (
-          <div key={i}>
-            <a href={h.link} target="_blank" rel="noreferrer">{h.title}</a>
-            <div className="badge">{h.source}{h.pubDate ? ` • ${new Date(h.pubDate).toLocaleString()}` : ''}</div>
-          </div>
+          <Item key={i} item={h} />
         ))}
+      </div>
+    </div>
+  );
+}
+
+function Item({ item }: { item: Headline }) {
+  const [img, setImg] = useState<string | undefined>(item.image);
+
+  useEffect(() => {
+    let mounted = true;
+    async function go() {
+      if (!item.image && item.link) {
+        try {
+          const r = await fetch(`/api/og?url=${encodeURIComponent(item.link)}`);
+          const j = await r.json();
+          if (mounted && j?.image) setImg(j.image);
+        } catch { /* ignore */ }
+      }
+    }
+    go();
+    return () => { mounted = false; };
+  }, [item.image, item.link]);
+
+  return (
+    <div className="item">
+      <div className="thumb">
+        {img ? (
+          <Image src={img} alt="" width={64} height={64} style={{ objectFit: 'cover' }} />
+        ) : null}
+      </div>
+      <div>
+        <a href={item.link} target="_blank" rel="noreferrer">{item.title}</a>
+        <div className="badge">
+          {item.source}{item.pubDate ? ` • ${new Date(item.pubDate).toLocaleString()}` : ''}
+        </div>
       </div>
     </div>
   );
