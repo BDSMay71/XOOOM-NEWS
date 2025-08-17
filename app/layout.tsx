@@ -1,4 +1,5 @@
 import { Inter } from 'next/font/google';
+
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
@@ -9,7 +10,20 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <header className="site-header">
+          <div className="site-header__inner">
+            <a className="site-brand" href="/">
+              <img className="site-logo" src="/xooom.svg" alt="XOOOM" />
+              <span className="site-title">XOOOM</span>
+            </a>
+            {/* Optional right-side actions: add buttons/links here */}
+          </div>
+        </header>
+        <main className="site-main">
+          {children}
+        </main>
+      </body>
     </html>
   );
 }
