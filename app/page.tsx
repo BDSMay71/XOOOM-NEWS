@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
-
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
 type Headline = { title: string; link: string; source: string; pubDate?: string; };
 type Buckets = { political: Headline[]; financial: Headline[]; business: Headline[]; sports: Headline[]; };
 
