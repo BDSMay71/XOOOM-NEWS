@@ -32,7 +32,6 @@ export default function Page() {
 
   return (
     <main>
-      <div className="header">
         <div className="brand">
           <img src="/xooom.svg" alt="XOOOM logo" />
           <h1>XOOOM</h1>
