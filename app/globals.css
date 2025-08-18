@@ -89,3 +89,16 @@ a:hover { text-decoration: underline; }
 @media (max-width: 420px) {
   .thumb { display:none; }
 }
+/* ===== Responsive news grid ===== */
+.sections {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* Force max 3 columns on very wide screens */
+@media (min-width: 1200px) {
+  .sections {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
