@@ -7,7 +7,7 @@ type Buckets = { political: Headline[]; financial: Headline[]; business: Headlin
 
 export default function Page() {
   const [buckets, setBuckets] = useState<Buckets | null>(null);
-  const [local, setLocal]   = useState<{ headlines: Headline[]; geo?: any; query?: string } | null>(null);
+  const [local, setLocal] = useState<{ headlines: Headline[]; geo?: any; query?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
