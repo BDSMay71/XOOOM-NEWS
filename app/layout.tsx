@@ -1,4 +1,4 @@
-import './globals.css';                     // <-- make sure this import is present
+import './globals.css';
 import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
 
-        {/* Adds top spacing equal to header height so content is not hidden */}
+        {/* Spacer so content sits below the fixed header */}
         <div className="site-header-spacer" />
 
         <main className="site-main">
