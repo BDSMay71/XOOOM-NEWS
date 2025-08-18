@@ -32,11 +32,12 @@ export default function Page() {
 
   return (
     <>
-      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap'}}>
-        <h1>Top Headlines — Global & Local</h1>
-        <button onClick={refresh} disabled={refreshing}>{refreshing ? 'Refreshing…' : 'Refresh'}</button>
-      </div>
-      <div className="time">{new Date().toLocaleString()}</div>
+<div className="sections">
+  <Section title="Politics" items={buckets.political} />
+  <Section title="Financial Markets" items={buckets.financial} />
+  <Section title="Business" items={buckets.business} />
+  <Section title="Sports" items={buckets.sports} />
+</div>
 
       {loading && <p>Loading headlines…</p>}
 
