@@ -3,7 +3,7 @@ import { FEEDS } from './feeds';
 import { BucketedNews, Headline } from './types';
 import { dedupe } from './dedupe';
 
-// Keep enclosure/media fields from RSS
+// Keep enclosure/media fields from RSS (useful if you added thumbnails)
 const parser: any = new Parser({
   timeout: 10000,
   headers: { 'User-Agent': 'XOOOM/1.0 (+https://example.com)' },
@@ -52,4 +52,15 @@ export async function fetchAllBuckets(): Promise<BucketedNews> {
     fetchBucket('sports')
   ]);
   return { political, financial, business, sports };
+}
+
+export async function fetchLocalGoogleNews(query: string, locale: string): Promise<Headline[]> {
+  // locale like "en-US" → ceid needs "US:en" and gl "US"
+  const gl = (locale.split('-').pop() || 'US').toUpperCase();
+  const hl = locale;
+  const ceid = `${gl}:${(locale.split('-')[0] || 'en').toLowerCase()}`;
+
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=${encodeURIComponent(hl)}&gl=${encodeURIComponent(gl)}&ceid=${encodeURIComponent(ceid)}`;
+  const feed = await fetchFeed(url, 'Google News');
+  return dedupe(feed, 30);
 }
