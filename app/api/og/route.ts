@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fetchOgImage } from '@/lib/og';
 
+export const runtime = 'nodejs';
 export const revalidate = 0;
 
 export async function GET(req: Request) {
