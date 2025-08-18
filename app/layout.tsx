@@ -1,4 +1,3 @@
-import './globals.css';
 import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -18,7 +17,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <img className="site-logo" src="/xooom.svg" alt="XOOOM" />
               <span className="site-title">XOOOM</span>
             </a>
-            {/* Optional right-side actions: add buttons/links here */}
           </div>
         </header>
         <main className="site-main">
