@@ -7,7 +7,7 @@ type Buckets = { political: Headline[]; financial: Headline[]; business: Headlin
 
 export default function Page() {
   const [buckets, setBuckets] = useState<Buckets | null>(null);
-  const [local, setLocal] = useState<{ headlines: Headline[]; geo?: any; query?: string } | null>(null);
+  const [local, setLocal]   = useState<{ headlines: Headline[]; geo?: any; query?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -32,32 +32,31 @@ export default function Page() {
 
   return (
     <>
-<div className="sections">
-  <Section title="Politics" items={buckets.political} />
-  <Section title="Financial Markets" items={buckets.financial} />
-  <Section title="Business" items={buckets.business} />
-  <Section title="Sports" items={buckets.sports} />
-</div>
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap'}}>
+        <h1>Top Headlines — Global & Local</h1>
+        <button onClick={refresh} disabled={refreshing}>{refreshing ? 'Refreshing…' : 'Refresh'}</button>
+      </div>
+      <div className="time">{new Date().toLocaleString()}</div>
 
       {loading && <p>Loading headlines…</p>}
 
       {!loading && buckets && (
         <>
-          {/* Global sections in a responsive 1/2/3-col grid */}
-          <div className="grid">
-            <Section title="Global Political" items={buckets.political} />
+          {/* GLOBAL buckets in responsive grid */}
+          <div className="news-grid">
+            <Section title="Politics" items={buckets.political} />
             <Section title="Financial Markets" items={buckets.financial} />
             <Section title="Business" items={buckets.business} />
             <Section title="Sports" items={buckets.sports} />
           </div>
 
-          {/* Local section: also uses the same responsive grid */}
+          {/* LOCAL headlines in same responsive grid */}
           <div className="local">
-            <h2>
+            <h2 className="section-title">
               Local News
               {local?.geo?.city && <> — {local.geo.city}{local.geo.region ? `, ${local.geo.region}` : ''} {local.geo.country ? `• ${local.geo.country}` : ''}</>}
             </h2>
-            <div className="grid">
+            <div className="news-grid">
               <Section title={`Top near ${local?.geo?.city || 'you'}`} items={(local?.headlines || []).slice(0, 24)} />
             </div>
             <div className="time">Query: {local?.query}</div>
@@ -74,15 +73,16 @@ export default function Page() {
 }
 
 function Section({ title, items }: { title: string; items: Headline[] }) {
+  if (!items?.length) return null;
   return (
-    <div className="card">
-      <h3>{title}</h3>
-      <div className="list">
+    <section className="section-card">
+      <h2 className="section-title">{title}</h2>
+      <div className="items-list">
         {items.slice(0, 25).map((h, i) => (
           <Item key={i} item={h} />
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 
