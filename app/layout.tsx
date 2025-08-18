@@ -5,13 +5,14 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
   title: 'XOOOM — Global & Local News',
-  description: 'XOOOM curates top political, financial, business, and sports headlines plus local news by IP.'
+  description: 'XOOOM curates top political, financial, business, and sports headlines plus local news by IP.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={inter.className}>
+        {/* FIXED, SLIM HEADER */}
         <header className="site-header fixed">
           <div className="site-header__inner">
             <a className="site-brand" href="/">
@@ -21,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
 
-        {/* Spacer so content sits below the fixed header */}
+        {/* Spacer so content sits below fixed header */}
         <div className="site-header-spacer" />
 
         <main className="site-main">
