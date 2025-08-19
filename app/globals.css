@@ -12,7 +12,7 @@ body {
 .site-header.fixed {
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 56px;                 /* slim bar; change to 52–64 if you like */
+  height: 56px;
   z-index: 1000;
   background: rgba(10, 15, 30, 0.92);
   border-bottom: 1px solid #152447;
@@ -28,7 +28,7 @@ body {
   gap: 10px;
 }
 .site-brand { display: inline-flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
-.site-logo  { height: 28px; width: auto; display: block; }  /* << SMALL, FIXED HEIGHT */
+.site-logo  { height: 28px; width: auto; display: block; }
 .site-title { font-size: 18px; font-weight: 700; letter-spacing: .4px; }
 
 /* Spacer must match header height */
@@ -41,14 +41,20 @@ body {
   padding: 24px 20px 40px;
 }
 
-/* ===== SECTION HEADINGS ===== */
+/* ===== TITLES ===== */
 .section-title {
   font-size: 24px;
   font-weight: 700;
   margin: 28px 0 14px;
-  color: #76c8ff;              /* same accent as logo */
+  color: #76c8ff;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+}
+.sub-section {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 10px 0 6px;
+  color: #76c8ff;
 }
 
 /* ===== CARDS & ITEMS ===== */
@@ -72,15 +78,24 @@ a { color: #76c8ff; text-decoration: none; }
 a:hover { text-decoration: underline; }
 .badge, .time { font-size: 12px; opacity: .75; }
 
-/* ===== RESPONSIVE GRID FOR SECTIONS (3 → 2 → 1) ===== */
-/* IMPORTANT: Use this class for the wrappers around your <Section/> cards */
+/* ===== ONE GRID FOR ALL SECTIONS: 3 → 2 → 1 ===== */
 .news-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: 1fr;                     /* phones: 1 col */
+  grid-template-columns: 1fr; /* phones */
 }
-@media (min-width: 700px)  { .news-grid { grid-template-columns: repeat(2, 1fr); } }  /* tablets: 2 cols */
-@media (min-width: 1100px) { .news-grid { grid-template-columns: repeat(3, 1fr); } }  /* desktops: 3 cols */
+@media (min-width: 700px)  { .news-grid { grid-template-columns: repeat(2, 1fr); } }  /* tablets */
+@media (min-width: 1100px) { .news-grid { grid-template-columns: repeat(3, 1fr); } }  /* desktops */
+
+.more-row { margin-top: 10px; display: flex; justify-content: center; }
+.more-row button { min-width: 160px; }
+
+.sort-row { display: flex; gap: 8px; }
+.sort-btn {
+  background:#0f1c38; border:1px solid #24417a; color:#eaf1ff;
+  padding:6px 10px; border-radius:10px; cursor:pointer; font-size:12px;
+}
+.sort-btn.active { box-shadow:0 0 0 2px rgba(118,200,255,.35) inset; }
 
 /* Footer */
 .footer {
@@ -92,28 +107,3 @@ a:hover { text-decoration: underline; }
 
 /* Very small screens */
 @media (max-width: 420px) { .thumb { display:none; } }
-
-.more-row {
-  margin-top: 10px;
-  display: flex;
-  justify-content: center;
-}
-.more-row button {
-  min-width: 160px;
-}
-.sort-row { display:flex; gap:8px; }
-.sort-btn {
-  background:#0f1c38; border:1px solid #24417a; color:#eaf1ff;
-  padding:6px 10px; border-radius:10px; cursor:pointer; font-size:12px;
-}
-.sort-btn.active { box-shadow:0 0 0 2px rgba(118,200,255,.35) inset; }
-.more-row { margin-top:10px; display:flex; justify-content:center; }
-.more-row button { min-width:160px; }
-}
-.sub-section {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-top: 0.75rem;
-  color: #0066cc; /* match your logo accent */
-}
-
