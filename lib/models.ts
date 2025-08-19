@@ -1,1 +1,17 @@
+export type Headline = {
+  title: string;
+  link: string;
+  source: string;
+  pubDate?: string;
+  image?: string;
+  citations?: number;
+};
 
+export type BucketedNews = {
+  political: Headline[];
+  financial: Headline[];
+  business: Headline[];
+  sports: Headline[];
+  health: Headline[];
+  social: Headline[];
+};
