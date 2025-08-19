@@ -92,3 +92,12 @@ a:hover { text-decoration: underline; }
 
 /* Very small screens */
 @media (max-width: 420px) { .thumb { display:none; } }
+
+.more-row {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+.more-row button {
+  min-width: 160px;
+}
