@@ -4,6 +4,7 @@ export type Headline = {
   source: string;
   pubDate?: string;
   image?: string;
+  citations?: number;
 };
 export type BucketedNews = {
   political: Headline[];
