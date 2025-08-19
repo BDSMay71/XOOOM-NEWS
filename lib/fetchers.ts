@@ -1,54 +1,113 @@
+import Parser from 'rss-parser';
+import { FEEDS } from './feeds';
 import { BucketedNews, Headline } from './models';
 
-// Utility: split US vs Global
-function splitUSvsGlobal(headlines: Headline[]): { us: Headline[]; global: Headline[] } {
+const parser: any = new Parser({
+  timeout: 10000,
+  headers: { 'User-Agent': 'XOOOM/1.0 (+https://xooomnews.com)' },
+  customFields: {
+    item: [
+      ['enclosure', 'enclosure'],
+      ['media:content', 'mediaContent', { keepArray: true }],
+      ['media:thumbnail', 'mediaThumbnail', { keepArray: true }]
+    ]
+  }
+});
+
+function mediaUrl(item: any): string | undefined {
+  const enc = item?.enclosure?.url || item?.enclosure?.url?.url;
+  if (enc) return enc;
+  const mc = item?.mediaContent?.[0]?.$?.url || item?.mediaContent?.[0]?.url;
+  if (mc) return mc;
+  const mt = item?.mediaThumbnail?.[0]?.$?.url || item?.mediaThumbnail?.[0]?.url;
+  if (mt) return mt;
+  return undefined;
+}
+
+async function fetchFeed(url: string, source: string): Promise<Headline[]> {
+  const feed = await parser.parseURL(url);
+  return (feed.items || []).slice(0, 40).map((item: any) => ({
+    title: item.title || 'Untitled',
+    link: (item.link || '').replace(/^http:/, 'https:'),
+    source,
+    pubDate: item.pubDate,
+    image: mediaUrl(item)
+  }));
+}
+
+function norm(s: string) {
+  return s
+    .toLowerCase()
+    .replace(/&#\d+;|&[a-z]+;/gi, ' ')
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\b(live|update|analysis|opinion|breaking)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export async function fetchBucket(category: keyof typeof FEEDS): Promise<Headline[]> {
+  const results = await Promise.allSettled(FEEDS[category].map(f => fetchFeed(f.url, f.source)));
+  const merged: Headline[] = results
+    .filter(r => r.status === 'fulfilled')
+    .flatMap((r: any) => r.value as Headline[]);
+
+  // group by normalized title; count “citations”; keep newest representative
+  const groups = new Map<string, { item: Headline; count: number }>();
+  for (const h of merged) {
+    const key = norm(h.title);
+    const ts = h.pubDate ? Date.parse(h.pubDate) : 0;
+    const g = groups.get(key);
+    if (!g) groups.set(key, { item: { ...h }, count: 1 });
+    else {
+      g.count += 1;
+      const gTs = g.item.pubDate ? Date.parse(g.item.pubDate) : 0;
+      if (ts > gTs) g.item = { ...h };
+    }
+  }
+
+  const deduped: Headline[] = Array.from(groups.values()).map(({ item, count }) => ({
+    ...item,
+    citations: count
+  }));
+
+  return deduped.slice(0, 80);
+}
+
+export async function fetchAllBuckets(): Promise<BucketedNews> {
+  const [political, financial, business, sports, health, social] = await Promise.all([
+    fetchBucket('political'),
+    fetchBucket('financial'),
+    fetchBucket('business'),
+    fetchBucket('sports'),
+    fetchBucket('health'),
+    fetchBucket('social')
+  ]);
+  return { political, financial, business, sports, health, social };
+}
+
+/* ===== UI helpers ===== */
+export function splitUSvsGlobal(headlines: Headline[]): { us: Headline[]; global: Headline[] } {
   const us: Headline[] = [];
   const global: Headline[] = [];
-  headlines.forEach(h => {
-    if (h.source?.toLowerCase().includes('us') || h.title.match(/\bUSA|US|American|Biden|Trump\b/i)) {
+  for (const h of headlines) {
+    if (/\b(US|U\.S\.|USA|American|Congress|White House|Biden|Trump)\b/i.test(h.title) || /\bUS\b/i.test(h.source)) {
       us.push(h);
     } else {
       global.push(h);
     }
-  });
+  }
   return { us, global };
 }
 
-// Utility: split sports by league
-function splitSports(headlines: Headline[]) {
+export function splitSports(headlines: Headline[]) {
   return {
-    nfl: headlines.filter(h => /NFL|football/i.test(h.title)),
-    nba: headlines.filter(h => /NBA|basketball/i.test(h.title)),
-    mlb: headlines.filter(h => /MLB|baseball/i.test(h.title)),
-    nhl: headlines.filter(h => /NHL|hockey/i.test(h.title)),
-    fifa: headlines.filter(h => /FIFA|soccer|world cup/i.test(h.title)),
-    other: headlines.filter(
-      h => !/NFL|NBA|MLB|NHL|FIFA|soccer|football|basketball|hockey|baseball/i.test(h.title)
+    NFL: headlines.filter(h => /\bNFL\b|american football/i.test(h.title)),
+    NBA: headlines.filter(h => /\bNBA\b|basketball/i.test(h.title)),
+    MLB: headlines.filter(h => /\bMLB\b|baseball/i.test(h.title)),
+    NHL: headlines.filter(h => /\bNHL\b|hockey/i.test(h.title)),
+    FIFA: headlines.filter(h => /\bFIFA\b|soccer|world cup/i.test(h.title)),
+    Other: headlines.filter(
+      h => !/\b(NFL|NBA|MLB|NHL|FIFA)\b|soccer|football|basketball|hockey|baseball/i.test(h.title)
     )
   };
 }
-
-export async function fetchNews(): Promise<BucketedNews> {
-  // your existing API calls remain
-  const raw = await fetch("https://newsapi.org/v2/top-headlines?apiKey=YOUR_KEY").then(r => r.json());
-
-  const all: Headline[] = raw.articles.map((a: any) => ({
-    title: a.title,
-    link: a.url,
-    source: a.source?.name || 'Unknown',
-    pubDate: a.publishedAt,
-    image: a.urlToImage,
-    citations: 1
-  }));
-
-  return {
-    political: all.filter(h => /politic|election|congress/i.test(h.title)),
-    financial: all.filter(h => /stock|market|finance|fed|bond/i.test(h.title)),
-    business: all.filter(h => /business|company|earnings|tech/i.test(h.title)),
-    sports: all.filter(h => /sports|NFL|NBA|MLB|NHL|soccer|FIFA/i.test(h.title)),
-    health: all.filter(h => /health|covid|virus|medical|hospital/i.test(h.title)),
-    social: all.filter(h => /social|culture|society|trend|influencer/i.test(h.title)),
-  };
-}
-
-export { splitUSvsGlobal, splitSports };
