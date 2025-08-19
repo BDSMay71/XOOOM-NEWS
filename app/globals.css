@@ -109,3 +109,10 @@ a:hover { text-decoration: underline; }
 .sort-btn.active { box-shadow:0 0 0 2px rgba(118,200,255,.35) inset; }
 .more-row { margin-top:10px; display:flex; justify-content:center; }
 .more-row button { min-width:160px; }
+}
+.sub-section {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 0.75rem;
+  color: #0066cc; /* match your logo accent */
+}
