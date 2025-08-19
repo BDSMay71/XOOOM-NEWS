@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { detectGeo, buildLocalQuery } from '@/lib/geo';
-import { fetchLocalGoogleNews } from '@/lib/fetchers';
 import { cached } from '@/lib/cache';
+import { fetchLocalGoogleNews } from '@/lib/fetchers';
 
+export const runtime = 'nodejs';
 export const revalidate = 0;
 
 export async function GET() {
