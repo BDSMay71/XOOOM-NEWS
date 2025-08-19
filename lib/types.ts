@@ -6,19 +6,12 @@ export type Headline = {
   image?: string;
   citations?: number;
 };
+
 export type BucketedNews = {
   political: Headline[];
   financial: Headline[];
   business: Headline[];
   sports: Headline[];
-  health: Headline[];
-  social: Headline[];
-};
-export type LocalGeo = {
-  ip?: string;
-  city?: string;
-  region?: string;
-  country?: string;
-  countryCode?: string;
-  timezone?: string;
+  health: Headline[];   // NEW
+  social: Headline[];   // NEW
 };
