@@ -11,6 +11,8 @@ export type BucketedNews = {
   financial: Headline[];
   business: Headline[];
   sports: Headline[];
+  health: Headline[];
+  social: Headline[];
 };
 export type LocalGeo = {
   ip?: string;
