@@ -101,3 +101,11 @@ a:hover { text-decoration: underline; }
 .more-row button {
   min-width: 160px;
 }
+.sort-row { display:flex; gap:8px; }
+.sort-btn {
+  background:#0f1c38; border:1px solid #24417a; color:#eaf1ff;
+  padding:6px 10px; border-radius:10px; cursor:pointer; font-size:12px;
+}
+.sort-btn.active { box-shadow:0 0 0 2px rgba(118,200,255,.35) inset; }
+.more-row { margin-top:10px; display:flex; justify-content:center; }
+.more-row button { min-width:160px; }
