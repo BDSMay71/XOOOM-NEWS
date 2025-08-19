@@ -111,3 +111,54 @@ export function splitSports(headlines: Headline[]) {
     )
   };
 }
+// --- Local news from Google News RSS (query built by /api/local) ---
+export async function fetchLocalGoogleNews(query: string, locale: string): Promise<Headline[]> {
+  // locale like "en-US" -> gl=US, hl=en-US, ceid=US:en
+  const lang = (locale.split('-')[0] || 'en').toLowerCase();
+  const country = (locale.split('-')[1] || 'US').toUpperCase();
+  const hl = `${lang}-${country}`;
+  const gl = country;
+  const ceid = `${country}:${lang}`;
+
+  const url =
+    `https://news.google.com/rss/search` +
+    `?q=${encodeURIComponent(query)}` +
+    `&hl=${encodeURIComponent(hl)}` +
+    `&gl=${encodeURIComponent(gl)}` +
+    `&ceid=${encodeURIComponent(ceid)}`;
+
+  // reuse fetchFeed to parse and map items, then dedupe by normalized title
+  const feedItems = await (async () => {
+    // we can't call fetchFeed directly because it adds a hard-coded "source"
+    const rss = await parser.parseURL(url);
+    return (rss.items || []).slice(0, 60).map((item: any) => ({
+      title: item.title || 'Untitled',
+      link: (item.link || '').replace(/^http:/, 'https:'),
+      source: 'Google News',
+      pubDate: item.pubDate,
+      image: (item.enclosure?.url) ||
+             (item?.['media:content']?.[0]?.$?.url) ||
+             (item?.['media:thumbnail']?.[0]?.$?.url)
+    })) as Headline[];
+  })();
+
+  // group & count "citations" across duplicates; keep the newest representative
+  const groups = new Map<string, { item: Headline; count: number }>();
+  for (const h of feedItems) {
+    const key = (h.title || '').toLowerCase()
+      .replace(/&#\d+;|&[a-z]+;/gi, ' ')
+      .replace(/[^a-z0-9 ]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const ts = h.pubDate ? Date.parse(h.pubDate) : 0;
+    const g = groups.get(key);
+    if (!g) groups.set(key, { item: { ...h }, count: 1 });
+    else {
+      g.count += 1;
+      const gTs = g.item.pubDate ? Date.parse(g.item.pubDate) : 0;
+      if (ts > gTs) g.item = { ...h };
+    }
+  }
+
+  return Array.from(groups.values()).map(({ item, count }) => ({ ...item, citations: count }));
+}
