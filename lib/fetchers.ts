@@ -1,6 +1,6 @@
 import Parser from 'rss-parser';
 import { FEEDS } from './feeds';
-import { BucketedNews, Headline } from './models';
+import { BucketedNews, Headline } from './types';
 
 const parser: any = new Parser({
   timeout: 10000,
