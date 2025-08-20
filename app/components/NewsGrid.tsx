@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import styles from './NewsGrid.module.css';
 import type { BucketedNews, Headline } from '@lib/models';
 
@@ -26,6 +27,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const CATEGORY_ORDER = ['political', 'financial', 'business', 'sports', 'health', 'social'];
+const DEFAULT_VISIBLE = 10; // top 10 with "More"
 
 export default function NewsGrid({ buckets }: Props) {
   const categories = Object.keys(buckets)
@@ -43,6 +45,7 @@ export default function NewsGrid({ buckets }: Props) {
 
         const displayName = CATEGORY_LABELS[category] ?? category;
 
+        // Sports → by league; others → by source
         const bySubgroup =
           category === 'sports'
             ? groupBy(headlines, (h) => (h.league ?? 'Other'))
@@ -56,28 +59,52 @@ export default function NewsGrid({ buckets }: Props) {
 
             <div className={styles.grid}>
               {subgroupKeys.map((key) => (
-                <div key={key} className={styles.card}>
-                  <h3 className={styles.sourceHeading}>{key}</h3>
-                  <ul className={styles.list}>
-                    {bySubgroup[key].map((h: Headline, i: number) => (
-                      <li key={`${key}-${i}`} className={styles.item}>
-                        <a href={h.link} target="_blank" rel="noreferrer" className={styles.link}>
-                          {h.title}
-                        </a>
-                        <div className={styles.meta}>
-                          {h.source}
-                          {h.publishedAt ? ` • ${new Date(h.publishedAt).toLocaleString()}` : ''}
-                        </div>
-                        {h.summary && <p className={styles.snippet}>{h.summary}</p>}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <Card key={key} title={key} items={bySubgroup[key]} />
               ))}
             </div>
           </section>
         );
       })}
+    </div>
+  );
+}
+
+function Card({ title, items }: { title: string; items: Headline[] }) {
+  const [visible, setVisible] = useState(DEFAULT_VISIBLE);
+  const showMore = visible < items.length;
+
+  return (
+    <div className={styles.card}>
+      <h3 className={styles.sourceHeading}>{title}</h3>
+      <ul className={styles.list}>
+        {items.slice(0, visible).map((h, i) => (
+          <li key={`${title}-${i}`} className={styles.item}>
+            {h.imageUrl ? (
+              <img className={styles.thumb} src={h.imageUrl} alt="" loading="lazy" />
+            ) : (
+              <div className={styles.thumb} aria-hidden="true" />
+            )}
+            <div className={styles.content}>
+              <a href={h.link} target="_blank" rel="noreferrer" className={styles.link}>
+                {h.title}
+              </a>
+              <div className={styles.meta}>
+                {h.source}
+                {h.publishedAt ? ` • ${new Date(h.publishedAt).toLocaleString()}` : ''}
+              </div>
+              {h.summary && <p className={styles.snippet}>{h.summary}</p>}
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {showMore && (
+        <div className={styles.moreRow}>
+          <button className={styles.moreBtn} onClick={() => setVisible((v) => v + 10)}>
+            More
+          </button>
+        </div>
+      )}
     </div>
   );
 }
