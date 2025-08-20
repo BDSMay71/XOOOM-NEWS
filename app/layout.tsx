@@ -1,43 +1,19 @@
 import './globals.css';
 import type { ReactNode } from 'react';
-
-export default function RootLayout({ children }: { children: ReactNode }) {
-  return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
-  );
-}
 import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'XOOOM — Global & Local News',
-  description: 'XOOOM curates top political, financial, business, and sports headlines plus local news by IP.',
+  title: 'XOOOM — News from the world to your street',
+  description:
+    'XOOOM curates top political, financial, business, sports, health, and culture headlines — plus local news by IP.',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        {/* FIXED, SLIM HEADER */}
-        <header className="site-header fixed">
-          <div className="site-header__inner">
-            <a className="site-brand" href="/">
-              <img className="site-logo" src="/xooom.svg" alt="XOOOM" />
-              <span className="site-title">XOOOM</span>
-            </a>
-          </div>
-        </header>
-
-        {/* Spacer so content sits below fixed header */}
-        <div className="site-header-spacer" />
-
-        <main className="site-main">
-          {children}
-        </main>
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }
