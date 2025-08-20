@@ -19,9 +19,13 @@
     "incremental": true,
     "plugins": [{ "name": "next" }],
 
-    /* Path alias so '@/...' works */
+    /* Path aliases */
     "baseUrl": ".",
-    "paths": { "@/*": ["*"] },
+    "paths": {
+      "@/*": ["*"],
+      "@components/*": ["app/components/*"],
+      "@lib/*": ["lib/*"]
+    },
 
     /* Types */
     "types": ["node"]
