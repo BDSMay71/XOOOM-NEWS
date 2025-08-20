@@ -1,6 +1,12 @@
 import './globals.css';
 import type { ReactNode } from 'react';
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',   // <-- important for env(safe-area-inset-*)
+};
+
 export const metadata = {
   title: 'XOOOM — News from the world to your street',
   description: 'Curated political, financial, business, sports, health, and culture headlines — plus local news.',
