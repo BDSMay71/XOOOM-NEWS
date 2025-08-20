@@ -3,7 +3,6 @@ import Parser from 'rss-parser';
 import { FEEDS } from './feeds';
 import type { BucketedNews, Headline, FeedsByCategory } from './models';
 
-/** Narrow RSS item type to just what we use */
 type RSSItem = {
   title?: string;
   link?: string;
@@ -39,7 +38,7 @@ function detectLeague(text: string): string | undefined {
   return undefined;
 }
 
-/** Normalize one feed into Headline[] */
+/** Normalize a single feed to Headline[] */
 export async function fetchFeed(
   url: string,
   source: string,
@@ -69,7 +68,7 @@ export async function fetchFeed(
     .filter((x): x is Headline => Boolean(x));
 }
 
-/** Fetch all categories defined in FEEDS, bucket by category */
+/** Fetch all categories in FEEDS → BucketedNews keyed by category */
 export async function fetchAllFeeds(
   feedsByCategory: FeedsByCategory = FEEDS as unknown as FeedsByCategory
 ): Promise<BucketedNews> {
@@ -81,7 +80,6 @@ export async function fetchAllFeeds(
       const results = await Promise.allSettled(
         entries.map(({ source, url }) => fetchFeed(url, source, category))
       );
-
       const headlines: Headline[] = [];
       for (const r of results) {
         if (r.status === 'fulfilled') headlines.push(...r.value);
@@ -93,7 +91,7 @@ export async function fetchAllFeeds(
   return buckets;
 }
 
-/** Keep backward-compat import used elsewhere */
+/** Back-compat export used elsewhere */
 export async function fetchAllBuckets(): Promise<BucketedNews> {
   return fetchAllFeeds();
 }
@@ -113,10 +111,7 @@ export async function fetchCategory(
   return headlines;
 }
 
-/**
- * Google News RSS for arbitrary queries (used for "local" route).
- * Example feed: https://news.google.com/rss/search?q=austin%20tx&hl=en-US&gl=US&ceid=US:en
- */
+/** Google News RSS for arbitrary queries (used by /api/local) */
 export async function fetchLocalGoogleNews(
   query: string,
   opts?: { category?: string; sourceName?: string }
