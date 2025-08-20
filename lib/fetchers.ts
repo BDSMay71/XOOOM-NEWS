@@ -3,6 +3,7 @@ import Parser from 'rss-parser';
 import { FEEDS } from './feeds';
 import type { BucketedNews, Headline, FeedsByCategory } from './models';
 
+/** Narrow RSS item type to just what we use */
 type RSSItem = {
   title?: string;
   link?: string;
@@ -16,7 +17,6 @@ const parser: Parser<RSSItem> = new Parser<RSSItem>({ timeout: 10000 });
 function detectLeague(text: string): string | undefined {
   const t = text.toLowerCase();
 
-  // Strong signals first
   if (/(nfl|super bowl|patriots|cowboys|packers|chiefs)/i.test(text)) return 'NFL';
   if (/(nba|playoffs|lakers|warriors|celtics|bucks)/i.test(text)) return 'NBA';
   if (/(mlb|world series|yankees|dodgers|red sox|braves)/i.test(text)) return 'MLB';
@@ -32,17 +32,14 @@ function detectLeague(text: string): string | undefined {
   if (/(atp|wta|wimbledon|us open|australian open|roland garros|french open)/i.test(text)) return 'Tennis';
   if (/(nfl draft|nba draft|mlb draft|nhl draft)/i.test(text)) return 'Draft';
 
-  // Generic fallbacks
   if (/\bsoccer|football\b/.test(t)) return 'Football/Soccer';
   if (/cricket|ipl/.test(t)) return 'Cricket';
   if (/rugby/.test(t)) return 'Rugby';
-  if (/olympic|paris 2024|medal/.test(t)) return 'Olympics';
+  if (/olympic|medal/.test(t)) return 'Olympics';
   return undefined;
 }
 
-/**
- * Fetch and normalize a single feed into Headline[].
- */
+/** Normalize one feed into Headline[] */
 export async function fetchFeed(
   url: string,
   source: string,
@@ -64,21 +61,19 @@ export async function fetchFeed(
         category,
         publishedAt: item.isoDate,
         summary: item.contentSnippet,
-        league: category === 'sports' ? detectLeague(`${title} ${item.contentSnippet ?? ''}`) : undefined
+        league: category === 'sports'
+          ? detectLeague(`${title} ${item.contentSnippet ?? ''}`)
+          : undefined
       };
     })
     .filter((x): x is Headline => Boolean(x));
 }
 
-/**
- * Fetch all categories in FEEDS and return BucketedNews,
- * where each key is the FEEDS category (political, financial, sports, health, social, …).
- */
+/** Fetch all categories defined in FEEDS, bucket by category */
 export async function fetchAllFeeds(
   feedsByCategory: FeedsByCategory = FEEDS as unknown as FeedsByCategory
 ): Promise<BucketedNews> {
   const buckets: BucketedNews = {};
-
   const categoryEntries = Object.entries(feedsByCategory);
 
   await Promise.all(
@@ -98,6 +93,11 @@ export async function fetchAllFeeds(
   return buckets;
 }
 
+/** Keep backward-compat import used elsewhere */
+export async function fetchAllBuckets(): Promise<BucketedNews> {
+  return fetchAllFeeds();
+}
+
 /** Fetch just one category (e.g., "financial") */
 export async function fetchCategory(
   category: string,
@@ -111,4 +111,41 @@ export async function fetchCategory(
   const headlines: Headline[] = [];
   for (const r of results) if (r.status === 'fulfilled') headlines.push(...r.value);
   return headlines;
+}
+
+/**
+ * Google News RSS for arbitrary queries (used for "local" route).
+ * Example feed: https://news.google.com/rss/search?q=austin%20tx&hl=en-US&gl=US&ceid=US:en
+ */
+export async function fetchLocalGoogleNews(
+  query: string,
+  opts?: { category?: string; sourceName?: string }
+): Promise<Headline[]> {
+  const category = opts?.category ?? 'local';
+  const sourceName = opts?.sourceName ?? 'Google News Local';
+
+  const url =
+    'https://news.google.com/rss/search?' +
+    `q=${encodeURIComponent(query)}` +
+    '&hl=en-US&gl=US&ceid=US:en';
+
+  const feed = await parser.parseURL(url);
+  const items = feed.items ?? [];
+
+  return items
+    .map((item): Headline | null => {
+      const title = item.title?.trim();
+      const link = item.link?.trim();
+      if (!title || !link) return null;
+
+      return {
+        title,
+        link,
+        source: sourceName,
+        category,
+        publishedAt: item.isoDate,
+        summary: item.contentSnippet
+      };
+    })
+    .filter((x): x is Headline => Boolean(x));
 }
