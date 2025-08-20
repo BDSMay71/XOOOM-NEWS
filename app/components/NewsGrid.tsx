@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import styles from './NewsGrid.module.css';
 import type { BucketedNews, Headline } from '@/lib/models';
 
@@ -25,7 +25,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 const CATEGORY_ORDER = ['political', 'financial', 'business', 'sports', 'health', 'social'];
 const DEFAULT_VISIBLE = 10;
 
-/** Fallback favicon if RSS item had no image */
+/* Always show a thumb: use RSS image if present, else site favicon */
 function faviconFrom(link: string): string {
   try {
     const u = new URL(link);
@@ -35,29 +35,39 @@ function faviconFrom(link: string): string {
   }
 }
 
+/* Parse date safely for sorting */
+function ts(d?: string): number {
+  const t = d ? Date.parse(d) : NaN;
+  return Number.isNaN(t) ? 0 : t;
+}
+
 export default function NewsGrid({ buckets }: Props) {
   const categories = Object.keys(buckets).sort(
     (a, b) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b)
   );
+
   if (!categories.length) return <div className={styles.empty}>No feeds loaded yet.</div>;
 
   return (
     <div className={styles.wrapper}>
       {categories.map((category) => {
-        const headlines = buckets[category] || [];
-        if (!headlines.length) return null;
+        const all = buckets[category] || [];
+        if (!all.length) return null;
 
         const displayName = CATEGORY_LABELS[category] ?? category;
+
+        // Sports → by league; others → by source
         const bySubgroup =
           category === 'sports'
-            ? groupBy(headlines, (h) => h.league ?? 'Other')
-            : groupBy(headlines, (h) => h.source);
+            ? groupBy(all, (h) => h.league ?? 'Other')
+            : groupBy(all, (h) => h.source);
 
         const subgroupKeys = Object.keys(bySubgroup).sort();
 
         return (
           <section key={category} className={styles.categoryBlock}>
             <h2 className={styles.categoryHeading}>{displayName}</h2>
+
             <div className={styles.grid}>
               {subgroupKeys.map((key) => (
                 <Column key={key} title={key} items={bySubgroup[key]} />
@@ -71,17 +81,43 @@ export default function NewsGrid({ buckets }: Props) {
 }
 
 function Column({ title, items }: { title: string; items: Headline[] }) {
+  // Sort newest→oldest so "most active" = first
+  const sorted = useMemo(
+    () => [...items].sort((a, b) => ts(b.publishedAt) - ts(a.publishedAt)),
+    [items]
+  );
   const [visible, setVisible] = useState(DEFAULT_VISIBLE);
-  const showMore = visible < items.length;
+  const showMore = visible < sorted.length;
+
+  const featured = sorted[0];
+  const rest = sorted.slice(1, visible);
+
+  const featThumb = (featured?.imageUrl) || faviconFrom(featured?.link || '');
 
   return (
     <div className={styles.column}>
       <h3 className={styles.sourceHeading}>{title}</h3>
       <ul className={styles.list}>
-        {items.slice(0, visible).map((h, i) => {
+        {featured && (
+          <li className={`${styles.item} ${styles.featured}`}>
+            <img className={`${styles.thumb} ${styles.thumbLarge}`} src={featThumb} alt="" loading="lazy" />
+            <div className={styles.content}>
+              <a href={featured.link} target="_blank" rel="noreferrer" className={`${styles.link} ${styles.titleLarge}`}>
+                {featured.title}
+              </a>
+              <div className={styles.meta}>
+                {featured.source}
+                {featured.publishedAt ? ` • ${new Date(featured.publishedAt).toLocaleString()}` : ''}
+              </div>
+              {featured.summary && <p className={styles.snippet}>{featured.summary}</p>}
+            </div>
+          </li>
+        )}
+
+        {rest.map((h, i) => {
           const thumb = h.imageUrl || faviconFrom(h.link);
           return (
-            <li key={`${title}-${i}`} className={styles.item}>
+            <li key={`${title}-rest-${i}`} className={styles.item}>
               <img className={styles.thumb} src={thumb} alt="" loading="lazy" />
               <div className={styles.content}>
                 <a href={h.link} target="_blank" rel="noreferrer" className={styles.link}>
