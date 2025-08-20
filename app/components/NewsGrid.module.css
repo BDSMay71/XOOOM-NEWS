@@ -1,16 +1,17 @@
-.wrapper { margin-top: 1.25rem; }
-.categoryBlock { margin-top: 2.5rem; }
+.wrapper { margin-top: 1rem; }
+.categoryBlock { margin-top: 2rem; }
 
 .categoryHeading{
   margin: 0 0 1rem;
   text-transform: capitalize;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   line-height: 1.2;
   border-bottom: 1px solid var(--divider);
   padding-bottom: .5rem;
   color: var(--brand-light);
 }
 
+/* Always 3 / 2 / 1 columns */
 .grid{
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -33,7 +34,7 @@
 
 .list{ list-style: none; margin: 0; padding: 0; }
 
-/* article rows */
+/* article rows (thumb + text) */
 .item{
   display: grid;
   grid-template-columns: 84px 1fr;
@@ -61,30 +62,24 @@
 
 .content{ min-width: 0; }
 
+/* Title only */
 .link{
   text-decoration: none;
   color: var(--text-primary);
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.25;
   display: inline-block;
 }
 .link:hover{ text-decoration: underline; }
 
-.titleLarge{ font-size: 1.05rem; }
-
+/* Source + date/time under the title */
 .meta{
-  font-size: .8rem;
+  font-size: .82rem;
   color: var(--text-secondary);
-  margin-top: .2rem;
+  margin-top: .25rem;
 }
 
-.snippet{
-  margin: .35rem 0 0;
-  font-size: .9rem;
-  color: var(--text-secondary);
-}
-
-/* more button */
+/* More button */
 .moreRow{ display: flex; justify-content: center; margin-top: .9rem; }
 .moreBtn{
   border: 1px solid var(--brand-light);
