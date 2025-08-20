@@ -14,19 +14,13 @@ function groupBy<T, K extends string | number>(arr: T[], getKey: (x: T) => K): R
   }, {} as Record<K, T[]>);
 }
 
-function packIntoColumns<T>(entries: Array<[string, T]>, n: number): Array<Array<[string, T]>> {
-  const cols: Array<Array<[string, T]>> = Array.from({ length: n }, () => []);
-  entries.forEach((e, i) => cols[i % n].push(e));
-  return cols;
-}
-
 const CATEGORY_LABELS: Record<string, string> = {
   political: 'Political',
   financial: 'Financial',
   business:  'Business',
   sports:    'Sports',
   health:    'Health',
-  social:    'Culture'
+  social:    'Culture',
 };
 const CATEGORY_ORDER = ['political', 'financial', 'business', 'sports', 'health', 'social'];
 const DEFAULT_VISIBLE = 10;
@@ -59,19 +53,14 @@ export default function NewsGrid({ buckets }: Props) {
             : groupBy(all, (h) => h.source);
 
         const entries = Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
-        const columns = packIntoColumns(entries, 3);
 
         return (
           <section key={category} className={styles.categoryBlock}>
             <h2 className={styles.categoryHeading}>{displayName}</h2>
 
             <div className={styles.grid}>
-              {columns.map((col, idx) => (
-                <div key={idx} className={styles.column}>
-                  {col.map(([title, items]) => (
-                    <ColumnBlock key={title} title={title} items={items} />
-                  ))}
-                </div>
+              {entries.map(([title, items]) => (
+                <GroupCard key={title} title={title} items={items} />
               ))}
             </div>
           </section>
@@ -81,7 +70,7 @@ export default function NewsGrid({ buckets }: Props) {
   );
 }
 
-function ColumnBlock({ title, items }: { title: string; items: Headline[] }) {
+function GroupCard({ title, items }: { title: string; items: Headline[] }) {
   // Newest first so "featured" is the most recent
   const sorted = useMemo(() => [...items].sort((a, b) => ts(b.publishedAt) - ts(a.publishedAt)), [items]);
   const [visible, setVisible] = useState(DEFAULT_VISIBLE);
@@ -93,14 +82,15 @@ function ColumnBlock({ title, items }: { title: string; items: Headline[] }) {
   const featThumb = (featured?.imageUrl) || faviconFrom(featured?.link || '');
 
   return (
-    <div>
+    <div className={styles.card}>
       <h3 className={styles.subHeading}>{title}</h3>
+
       <ul className={styles.list}>
         {featured && (
           <li className={`${styles.item} ${styles.featured}`}>
             <img className={`${styles.thumb} ${styles.thumbLarge}`} src={featThumb} alt="" loading="lazy" />
             <div className={styles.content}>
-              <a href={featured.link} target="_blank" rel="noreferrer" className={styles.link}>
+              <a href={featured.link} target="_blank" rel="noreferrer" className={`${styles.link} ${styles.titleLarge}`}>
                 {featured.title}
               </a>
               <div className={styles.meta}>
