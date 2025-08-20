@@ -2,8 +2,8 @@
 
 export type Geo = {
   city?: string;
-  region?: string;
-  country?: string;
+  region?: string;   // e.g., "TX"
+  country?: string;  // e.g., "US"
 };
 
 /** Pull basic geo from request headers / querystring */
@@ -15,7 +15,7 @@ export function detectGeo(req: Request): Geo {
   const qCountry = url.searchParams.get('country') || undefined;
   if (qCity || qRegion || qCountry) return { city: qCity, region: qRegion, country: qCountry };
 
-  // Vercel geo headers (best-effort)
+  // Vercel geo headers (best effort)
   const city = req.headers.get('x-vercel-ip-city') || undefined;
   const region = req.headers.get('x-vercel-ip-country-region') || undefined;
   const country = req.headers.get('x-vercel-ip-country') || undefined;
@@ -23,7 +23,18 @@ export function detectGeo(req: Request): Geo {
   return { city, region, country };
 }
 
-/** Build a simple search string for Google News */
-export function buildLocalQuery(geo: Geo): string {
-  return [geo.city, geo.region, geo.country].filter(Boolean).join(' ');
+/**
+ * Build query + locale for Google News.
+ * Returns an object so callers can destructure safely.
+ */
+export function buildLocalQuery(geo: Geo): { query: string; locale?: string } {
+  const parts = [geo.city, geo.region, geo.country].filter(Boolean);
+  const query = parts.join(' ') || 'United States';
+
+  // Locale like "US" or "US-TX" if region is available
+  const locale = geo.country
+    ? (geo.region ? `${geo.country}-${geo.region}` : geo.country)
+    : undefined;
+
+  return { query, locale };
 }
