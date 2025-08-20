@@ -1,18 +1,16 @@
 // lib/models.ts
 
-/** One normalized article from any feed */
 export type Headline = {
   title: string;
-  link: string;            // canonical URL
-  source: string;          // e.g., "Reuters Politics", "FT Markets"
-  category: string;        // e.g., "political", "financial", "sports", "health", "social"
-  publishedAt?: string;    // ISO date if provided by the feed
-  summary?: string;        // contentSnippet / description
-  tickers?: string[];      // optional post-processing
-  league?: string;         // ONLY for sports (e.g., "NFL", "NBA", "MLB", ...)
+  link: string;
+  source: string;       // e.g., "Reuters Business"
+  category: string;     // e.g., "business", "sports", "health", "social"
+  publishedAt?: string; // ISO string
+  summary?: string;
+  tickers?: string[];
+  league?: string;      // sports-only grouping
 };
 
-/** Bucket headlines by FEEDS category key */
 export type BucketedNews = Record<string, Headline[]>;
 
 export type FeedEntry = { source: string; url: string };
