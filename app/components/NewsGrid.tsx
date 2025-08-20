@@ -14,11 +14,7 @@ function groupBy<T, K extends string | number>(arr: T[], getKey: (x: T) => K): R
   }, {} as Record<K, T[]>);
 }
 
-// Distribute subgroup blocks across exactly N columns (round-robin)
-function packIntoColumns<T>(
-  entries: Array<[string, T]>,
-  n: number
-): Array<Array<[string, T]>> {
+function packIntoColumns<T>(entries: Array<[string, T]>, n: number): Array<Array<[string, T]>> {
   const cols: Array<Array<[string, T]>> = Array.from({ length: n }, () => []);
   entries.forEach((e, i) => cols[i % n].push(e));
   return cols;
@@ -39,7 +35,6 @@ function faviconFrom(link: string): string {
   try { return `https://www.google.com/s2/favicons?domain=${new URL(link).hostname}&sz=64`; }
   catch { return 'https://www.google.com/s2/favicons?domain=news.google.com&sz=64'; }
 }
-
 function ts(d?: string): number {
   const t = d ? Date.parse(d) : NaN;
   return Number.isNaN(t) ? 0 : t;
@@ -49,7 +44,6 @@ export default function NewsGrid({ buckets }: Props) {
   const categories = Object.keys(buckets).sort(
     (a, b) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b)
   );
-
   if (!categories.length) return <div className={styles.empty}>No feeds loaded yet.</div>;
 
   return (
@@ -59,18 +53,12 @@ export default function NewsGrid({ buckets }: Props) {
         if (!all.length) return null;
 
         const displayName = CATEGORY_LABELS[category] ?? category;
-
-        // Sports → by league; others → by source
         const groups =
           category === 'sports'
             ? groupBy(all, (h) => h.league ?? 'Other')
             : groupBy(all, (h) => h.source);
 
-        const entries = Object.entries(groups).sort(([a], [b]) =>
-          a.localeCompare(b)
-        );
-
-        // Pack subgroup blocks across exactly 3 columns
+        const entries = Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
         const columns = packIntoColumns(entries, 3);
 
         return (
@@ -94,11 +82,8 @@ export default function NewsGrid({ buckets }: Props) {
 }
 
 function ColumnBlock({ title, items }: { title: string; items: Headline[] }) {
-  // Newest first so the "featured" is the most recent item
-  const sorted = useMemo(
-    () => [...items].sort((a, b) => ts(b.publishedAt) - ts(a.publishedAt)),
-    [items]
-  );
+  // Newest first so "featured" is the most recent
+  const sorted = useMemo(() => [...items].sort((a, b) => ts(b.publishedAt) - ts(a.publishedAt)), [items]);
   const [visible, setVisible] = useState(DEFAULT_VISIBLE);
   const showMore = visible < sorted.length;
 
@@ -110,20 +95,18 @@ function ColumnBlock({ title, items }: { title: string; items: Headline[] }) {
   return (
     <div>
       <h3 className={styles.subHeading}>{title}</h3>
-
       <ul className={styles.list}>
         {featured && (
           <li className={`${styles.item} ${styles.featured}`}>
             <img className={`${styles.thumb} ${styles.thumbLarge}`} src={featThumb} alt="" loading="lazy" />
             <div className={styles.content}>
-              <a href={featured.link} target="_blank" rel="noreferrer" className={`${styles.link} ${styles.titleLarge}`}>
+              <a href={featured.link} target="_blank" rel="noreferrer" className={styles.link}>
                 {featured.title}
               </a>
               <div className={styles.meta}>
                 {featured.source}
                 {featured.publishedAt ? ` • ${new Date(featured.publishedAt).toLocaleString()}` : ''}
               </div>
-              {featured.summary && <p className={styles.snippet}>{featured.summary}</p>}
             </div>
           </li>
         )}
@@ -141,7 +124,6 @@ function ColumnBlock({ title, items }: { title: string; items: Headline[] }) {
                   {h.source}
                   {h.publishedAt ? ` • ${new Date(h.publishedAt).toLocaleString()}` : ''}
                 </div>
-                {h.summary && <p className={styles.snippet}>{h.summary}</p>}
               </div>
             </li>
           );
