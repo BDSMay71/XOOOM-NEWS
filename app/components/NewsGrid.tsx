@@ -16,17 +16,15 @@ function groupBy<T, K extends string | number>(
   }, {} as Record<K, T[]>);
 }
 
-// UI labels for category keys (keep your FEEDS keys but show nicer names)
 const CATEGORY_LABELS: Record<string, string> = {
   political: 'Political',
   financial: 'Financial',
   business:  'Business',
   sports:    'Sports',
   health:    'Health',
-  social:    'Culture', // << render "social" as "Culture"
+  social:    'Culture' // display name
 };
 
-// Optional sort order — includes Health and Culture
 const CATEGORY_ORDER = ['political', 'financial', 'business', 'sports', 'health', 'social'];
 
 export default function NewsGrid({ buckets }: Props) {
@@ -45,15 +43,11 @@ export default function NewsGrid({ buckets }: Props) {
 
         const displayName = CATEGORY_LABELS[category] ?? category;
 
-        // Sub-headings:
-        // - Sports: group by league (fallback "Other")
-        // - Others: group by source
         const bySubgroup =
           category === 'sports'
             ? groupBy(headlines, (h) => (h.league ?? 'Other'))
             : groupBy(headlines, (h) => h.source);
 
-        // Keep a consistent order of subgroups
         const subgroupKeys = Object.keys(bySubgroup).sort();
 
         return (
