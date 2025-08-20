@@ -8,9 +8,40 @@ type RSSItem = {
   link?: string;
   isoDate?: string;
   contentSnippet?: string;
+  // rss-parser commonly maps thumbnails here:
+  enclosure?: { url?: string; type?: string };
+  // Some feeds use media:content or media:thumbnail; keep as any to probe
+  [key: string]: any;
 };
 
 const parser: Parser<RSSItem> = new Parser<RSSItem>({ timeout: 10000 });
+
+/** Try to pull a thumbnail URL from common RSS fields */
+function extractImage(item: RSSItem): string | undefined {
+  // media:content (could be object or array)
+  const mediaContent = item['media:content'];
+  if (mediaContent) {
+    if (Array.isArray(mediaContent)) {
+      for (const m of mediaContent) if (m?.url) return m.url as string;
+    } else if (typeof mediaContent === 'object' && mediaContent.url) {
+      return mediaContent.url as string;
+    }
+  }
+  // media:thumbnail
+  const mediaThumb = item['media:thumbnail'];
+  if (mediaThumb) {
+    if (Array.isArray(mediaThumb)) {
+      for (const m of mediaThumb) if (m?.url) return m.url as string;
+    } else if (typeof mediaThumb === 'object' && mediaThumb.url) {
+      return mediaThumb.url as string;
+    }
+  }
+  // enclosure
+  if (item.enclosure?.url) return item.enclosure.url;
+
+  // OG image sometimes baked into content:encoded; we’ll skip heavy parsing
+  return undefined;
+}
 
 /** Heuristic league detector for sports */
 function detectLeague(text: string): string | undefined {
@@ -60,6 +91,7 @@ export async function fetchFeed(
         category,
         publishedAt: item.isoDate,
         summary: item.contentSnippet,
+        imageUrl: extractImage(item),
         league: category === 'sports'
           ? detectLeague(`${title} ${item.contentSnippet ?? ''}`)
           : undefined
@@ -68,7 +100,7 @@ export async function fetchFeed(
     .filter((x): x is Headline => Boolean(x));
 }
 
-/** Fetch all categories in FEEDS → BucketedNews keyed by category */
+/** Fetch all categories → BucketedNews keyed by category */
 export async function fetchAllFeeds(
   feedsByCategory: FeedsByCategory = FEEDS as unknown as FeedsByCategory
 ): Promise<BucketedNews> {
@@ -81,9 +113,7 @@ export async function fetchAllFeeds(
         entries.map(({ source, url }) => fetchFeed(url, source, category))
       );
       const headlines: Headline[] = [];
-      for (const r of results) {
-        if (r.status === 'fulfilled') headlines.push(...r.value);
-      }
+      for (const r of results) if (r.status === 'fulfilled') headlines.push(...r.value);
       if (headlines.length) buckets[category] = headlines;
     })
   );
@@ -91,12 +121,12 @@ export async function fetchAllFeeds(
   return buckets;
 }
 
-/** Back-compat export used elsewhere */
+/** Back-compat export */
 export async function fetchAllBuckets(): Promise<BucketedNews> {
   return fetchAllFeeds();
 }
 
-/** Fetch just one category (e.g., "financial") */
+/** Fetch one category */
 export async function fetchCategory(
   category: string,
   feedsByCategory: FeedsByCategory = FEEDS as unknown as FeedsByCategory
@@ -111,7 +141,7 @@ export async function fetchCategory(
   return headlines;
 }
 
-/** Google News RSS for arbitrary queries (used by /api/local) */
+/** Google News “local” helper used by /api/local */
 export async function fetchLocalGoogleNews(
   query: string,
   opts?: { category?: string; sourceName?: string }
@@ -139,7 +169,8 @@ export async function fetchLocalGoogleNews(
         source: sourceName,
         category,
         publishedAt: item.isoDate,
-        summary: item.contentSnippet
+        summary: item.contentSnippet,
+        imageUrl: extractImage(item)
       };
     })
     .filter((x): x is Headline => Boolean(x));
