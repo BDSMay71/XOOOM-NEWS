@@ -9,17 +9,14 @@
     "jsx": "preserve",
     "noEmit": true,
 
-    /* Next.js / SWC requirements */
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
 
-    /* Helpful Next.js suggestions */
     "allowJs": false,
     "incremental": true,
     "plugins": [{ "name": "next" }],
 
-    /* Path aliases */
     "baseUrl": ".",
     "paths": {
       "@/*": ["*"],
@@ -27,7 +24,6 @@
       "@lib/*": ["lib/*"]
     },
 
-    /* Types */
     "types": ["node"]
   },
   "include": ["app", "lib", "next-env.d.ts", ".next/types/**/*.ts"],
