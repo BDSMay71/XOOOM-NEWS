@@ -71,7 +71,7 @@ export default function NewsGrid({ buckets }: Props) {
 }
 
 function GroupCard({ title, items }: { title: string; items: Headline[] }) {
-  // Newest first so "featured" is the most recent
+  // Newest first so featured is most recent
   const sorted = useMemo(() => [...items].sort((a, b) => ts(b.publishedAt) - ts(a.publishedAt)), [items]);
   const [visible, setVisible] = useState(DEFAULT_VISIBLE);
   const showMore = visible < sorted.length;
