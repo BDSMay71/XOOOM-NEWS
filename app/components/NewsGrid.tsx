@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './NewsGrid.module.css';
-import type { BucketedNews, Headline } from '@/lib/models';
+import type { BucketedNews, Headline } from '@lib/models';
 
 type Props = { buckets: BucketedNews };
 
@@ -22,7 +22,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   business:  'Business',
   sports:    'Sports',
   health:    'Health',
-  social:    'Culture' // display name
+  social:    'Culture'
 };
 
 const CATEGORY_ORDER = ['political', 'financial', 'business', 'sports', 'health', 'social'];
