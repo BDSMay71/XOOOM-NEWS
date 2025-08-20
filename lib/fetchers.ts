@@ -7,53 +7,61 @@ type RSSItem = {
   title?: string;
   link?: string;
   isoDate?: string;
+  content?: string;        // content:encoded (rss-parser normalizes to `content`)
   contentSnippet?: string;
   enclosure?: { url?: string; type?: string };
+  // media namespaced fields come in via customFields (can be object or array)
   [key: string]: any;
 };
 
-const parser: Parser<RSSItem> = new Parser<RSSItem>({ timeout: 10000 });
+/**
+ * IMPORTANT: capture media fields so we can pull thumbnails.
+ * `keepArray: true` keeps multiple candidates when present.
+ */
+const parser: Parser<RSSItem> = new Parser<RSSItem>({
+  timeout: 10000,
+  customFields: {
+    item: [
+      ['media:content', 'media:content', { keepArray: true }],
+      ['media:thumbnail', 'media:thumbnail', { keepArray: true }],
+      // Some feeds put images here:
+      ['image', 'image', { keepArray: false }],
+    ],
+  },
+});
 
-/** Keep only items published today or yesterday in America/Chicago */
-function isTodayOrYesterday(iso?: string, tz = 'America/Chicago'): boolean {
-  if (!iso) return false;
-  const d = new Date(iso);
-  if (Number.isNaN(+d)) return false;
-
-  const fmt = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
-
-  const now = new Date();
-  const todayStr = fmt.format(now);
-  const y = new Date(now);
-  y.setDate(now.getDate() - 1);
-  const yestStr = fmt.format(y);
-  const dStr = fmt.format(d);
-
-  return dStr === todayStr || dStr === yestStr;
-}
-
+/** Try to pull a thumbnail URL from common RSS fields */
 function extractImage(item: RSSItem): string | undefined {
+  // media:content
   const mc = item['media:content'];
   if (mc) {
     if (Array.isArray(mc)) for (const m of mc) if (m?.url) return m.url as string;
-    else if (typeof mc === 'object' && mc.url) return mc.url as string;
+    if (typeof mc === 'object' && mc.url) return mc.url as string;
   }
+
+  // media:thumbnail
   const mt = item['media:thumbnail'];
   if (mt) {
     if (Array.isArray(mt)) for (const m of mt) if (m?.url) return m.url as string;
-    else if (typeof mt === 'object' && mt.url) return mt.url as string;
+    if (typeof mt === 'object' && mt.url) return mt.url as string;
   }
+
+  // enclosure
   if (item.enclosure?.url) return item.enclosure.url;
+
+  // some feeds put absolute <img> in content:encoded or content
+  const html = item.content || '';
+  const m = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+  if (m?.[1]) return m[1];
+
+  // nothing found
   return undefined;
 }
 
+/** Heuristic league detector for sports */
 function detectLeague(text: string): string | undefined {
   const t = text.toLowerCase();
+
   if (/(nfl|super bowl|patriots|cowboys|packers|chiefs)/i.test(text)) return 'NFL';
   if (/(nba|playoffs|lakers|warriors|celtics|bucks)/i.test(text)) return 'NBA';
   if (/(mlb|world series|yankees|dodgers|red sox|braves)/i.test(text)) return 'MLB';
@@ -68,6 +76,7 @@ function detectLeague(text: string): string | undefined {
   if (/(pga|masters|u\.s\. open|ryder cup)/i.test(text)) return 'Golf';
   if (/(atp|wta|wimbledon|us open|australian open|roland garros|french open)/i.test(text)) return 'Tennis';
   if (/(nfl draft|nba draft|mlb draft|nhl draft)/i.test(text)) return 'Draft';
+
   if (/\bsoccer|football\b/.test(t)) return 'Football/Soccer';
   if (/cricket|ipl/.test(t)) return 'Cricket';
   if (/rugby/.test(t)) return 'Rugby';
@@ -75,7 +84,7 @@ function detectLeague(text: string): string | undefined {
   return undefined;
 }
 
-/** Normalize a single feed to Headline[] and filter to today/yesterday */
+/** Normalize a single feed to Headline[] (no date filter here since you skipped it) */
 export async function fetchFeed(
   url: string,
   source: string,
@@ -98,13 +107,13 @@ export async function fetchFeed(
         publishedAt: item.isoDate,
         summary: item.contentSnippet,
         imageUrl: extractImage(item),
-        league: category === 'sports'
-          ? detectLeague(`${title} ${item.contentSnippet ?? ''}`)
-          : undefined
+        league:
+          category === 'sports'
+            ? detectLeague(`${title} ${item.contentSnippet ?? ''}`)
+            : undefined,
       };
     })
-    .filter((x): x is Headline => Boolean(x))
-    .filter((x) => isTodayOrYesterday(x.publishedAt)); // <<< filter here
+    .filter((x): x is Headline => Boolean(x));
 }
 
 export async function fetchAllFeeds(
@@ -145,7 +154,7 @@ export async function fetchCategory(
   return headlines;
 }
 
-/** Google News RSS for arbitrary queries (used by /api/local); filtered to today/yesterday */
+/** Google News “local” helper (uses the same image extraction) */
 export async function fetchLocalGoogleNews(
   query: string,
   opts?: { category?: string; sourceName?: string }
@@ -174,9 +183,8 @@ export async function fetchLocalGoogleNews(
         category,
         publishedAt: item.isoDate,
         summary: item.contentSnippet,
-        imageUrl: extractImage(item)
+        imageUrl: extractImage(item),
       };
     })
-    .filter((x): x is Headline => Boolean(x))
-    .filter((x) => isTodayOrYesterday(x.publishedAt)); // <<< filter here too
+    .filter((x): x is Headline => Boolean(x));
 }
