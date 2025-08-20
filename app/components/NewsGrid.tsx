@@ -1,12 +1,9 @@
-// app/components/NewsGrid.tsx
 'use client';
 
 import styles from './NewsGrid.module.css';
 import type { BucketedNews, Headline } from '@/lib/models';
 
-type Props = {
-  buckets: BucketedNews;
-};
+type Props = { buckets: BucketedNews };
 
 function groupBy<T, K extends string | number>(
   arr: T[],
@@ -19,8 +16,22 @@ function groupBy<T, K extends string | number>(
   }, {} as Record<K, T[]>);
 }
 
+// UI labels for category keys (keep your FEEDS keys but show nicer names)
+const CATEGORY_LABELS: Record<string, string> = {
+  political: 'Political',
+  financial: 'Financial',
+  business:  'Business',
+  sports:    'Sports',
+  health:    'Health',
+  social:    'Culture', // << render "social" as "Culture"
+};
+
+// Optional sort order — includes Health and Culture
+const CATEGORY_ORDER = ['political', 'financial', 'business', 'sports', 'health', 'social'];
+
 export default function NewsGrid({ buckets }: Props) {
-  const categories = Object.keys(buckets);
+  const categories = Object.keys(buckets)
+    .sort((a, b) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b));
 
   if (!categories.length) {
     return <div className={styles.empty}>No feeds loaded yet.</div>;
@@ -30,25 +41,38 @@ export default function NewsGrid({ buckets }: Props) {
     <div className={styles.wrapper}>
       {categories.map((category) => {
         const headlines = buckets[category] || [];
-        const bySource = groupBy(headlines, (h) => h.source);
+        if (!headlines.length) return null;
+
+        const displayName = CATEGORY_LABELS[category] ?? category;
+
+        // Sub-headings:
+        // - Sports: group by league (fallback "Other")
+        // - Others: group by source
+        const bySubgroup =
+          category === 'sports'
+            ? groupBy(headlines, (h) => (h.league ?? 'Other'))
+            : groupBy(headlines, (h) => h.source);
+
+        // Keep a consistent order of subgroups
+        const subgroupKeys = Object.keys(bySubgroup).sort();
 
         return (
           <section key={category} className={styles.categoryBlock}>
-            <h2 className={styles.categoryHeading}>{category}</h2>
+            <h2 className={styles.categoryHeading}>{displayName}</h2>
 
             <div className={styles.grid}>
-              {Object.entries(bySource).map(([source, items]) => (
-                <div key={source} className={styles.card}>
-                  <h3 className={styles.sourceHeading}>{source}</h3>
-
+              {subgroupKeys.map((key) => (
+                <div key={key} className={styles.card}>
+                  <h3 className={styles.sourceHeading}>{key}</h3>
                   <ul className={styles.list}>
-                    {items.map((h: Headline, i: number) => (
-                      <li key={`${source}-${i}`} className={styles.item}>
+                    {bySubgroup[key].map((h: Headline, i: number) => (
+                      <li key={`${key}-${i}`} className={styles.item}>
                         <a href={h.link} target="_blank" rel="noreferrer" className={styles.link}>
                           {h.title}
                         </a>
                         <div className={styles.meta}>
-                          {h.publishedAt ? new Date(h.publishedAt).toLocaleString() : ''}
+                          {h.source}
+                          {h.publishedAt ? ` • ${new Date(h.publishedAt).toLocaleString()}` : ''}
                         </div>
                         {h.summary && <p className={styles.snippet}>{h.summary}</p>}
                       </li>
