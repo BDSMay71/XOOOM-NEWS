@@ -14,6 +14,16 @@ function groupBy<T, K extends string | number>(arr: T[], getKey: (x: T) => K): R
   }, {} as Record<K, T[]>);
 }
 
+// Distribute subgroup blocks across exactly N columns (round-robin)
+function packIntoColumns<T>(
+  entries: Array<[string, T]>,
+  n: number
+): Array<Array<[string, T]>> {
+  const cols: Array<Array<[string, T]>> = Array.from({ length: n }, () => []);
+  entries.forEach((e, i) => cols[i % n].push(e));
+  return cols;
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   political: 'Political',
   financial: 'Financial',
@@ -25,17 +35,11 @@ const CATEGORY_LABELS: Record<string, string> = {
 const CATEGORY_ORDER = ['political', 'financial', 'business', 'sports', 'health', 'social'];
 const DEFAULT_VISIBLE = 10;
 
-/* Always show a thumb: use RSS image if present, else site favicon */
 function faviconFrom(link: string): string {
-  try {
-    const u = new URL(link);
-    return `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=64`;
-  } catch {
-    return 'https://www.google.com/s2/favicons?domain=news.google.com&sz=64';
-  }
+  try { return `https://www.google.com/s2/favicons?domain=${new URL(link).hostname}&sz=64`; }
+  catch { return 'https://www.google.com/s2/favicons?domain=news.google.com&sz=64'; }
 }
 
-/* Parse date safely for sorting */
 function ts(d?: string): number {
   const t = d ? Date.parse(d) : NaN;
   return Number.isNaN(t) ? 0 : t;
@@ -57,20 +61,29 @@ export default function NewsGrid({ buckets }: Props) {
         const displayName = CATEGORY_LABELS[category] ?? category;
 
         // Sports → by league; others → by source
-        const bySubgroup =
+        const groups =
           category === 'sports'
             ? groupBy(all, (h) => h.league ?? 'Other')
             : groupBy(all, (h) => h.source);
 
-        const subgroupKeys = Object.keys(bySubgroup).sort();
+        const entries = Object.entries(groups).sort(([a], [b]) =>
+          a.localeCompare(b)
+        );
+
+        // Pack subgroup blocks across exactly 3 columns
+        const columns = packIntoColumns(entries, 3);
 
         return (
           <section key={category} className={styles.categoryBlock}>
             <h2 className={styles.categoryHeading}>{displayName}</h2>
 
             <div className={styles.grid}>
-              {subgroupKeys.map((key) => (
-                <Column key={key} title={key} items={bySubgroup[key]} />
+              {columns.map((col, idx) => (
+                <div key={idx} className={styles.column}>
+                  {col.map(([title, items]) => (
+                    <ColumnBlock key={title} title={title} items={items} />
+                  ))}
+                </div>
               ))}
             </div>
           </section>
@@ -80,8 +93,8 @@ export default function NewsGrid({ buckets }: Props) {
   );
 }
 
-function Column({ title, items }: { title: string; items: Headline[] }) {
-  // Sort newest→oldest so "most active" = first
+function ColumnBlock({ title, items }: { title: string; items: Headline[] }) {
+  // Newest first so the "featured" is the most recent item
   const sorted = useMemo(
     () => [...items].sort((a, b) => ts(b.publishedAt) - ts(a.publishedAt)),
     [items]
@@ -95,8 +108,9 @@ function Column({ title, items }: { title: string; items: Headline[] }) {
   const featThumb = (featured?.imageUrl) || faviconFrom(featured?.link || '');
 
   return (
-    <div className={styles.column}>
-      <h3 className={styles.sourceHeading}>{title}</h3>
+    <div>
+      <h3 className={styles.subHeading}>{title}</h3>
+
       <ul className={styles.list}>
         {featured && (
           <li className={`${styles.item} ${styles.featured}`}>
