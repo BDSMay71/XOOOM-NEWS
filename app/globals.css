@@ -46,26 +46,52 @@ img{ display:block; max-width:100%; }
 }
 
 /* ===== Sticky header ===== */
+:root{
+  /* …your existing vars… */
+  --header-h: 64px;
+}
+
+/* ensure the body itself isn’t interfering */
+html, body { height: 100%; }
+body{
+  margin: 0;
+  /* keep your existing background and font rules here */
+  /* helpful on iOS to avoid odd rubber-band effects under fixed bars */
+  overscroll-behavior-y: none;
+}
+
+/* ===== FIXED Header (mobile-safe) ===== */
 .siteHeader{
-  position: sticky; top: 0; z-index: 50;
-  height: var(--header-h);
-  background: rgba(255,255,255,.9);
+  position: fixed;        /* was sticky — now fixed so it never detaches */
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+
+  height: calc(var(--header-h) + env(safe-area-inset-top)); /* include notch */
+  padding-top: env(safe-area-inset-top);
+
+  /* keep your existing background/border/backdrop styles */
+  background: rgba(255,255,255,.9);           /* or your dark theme bg */
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
 }
+
+/* your container class can stay the same */
 .siteHeader__inner{
-  height: 100%;
-  display: flex; align-items: center; gap: .75rem;
-}
-.siteHeader__brand{
-  font-weight: 900; letter-spacing: .2px; color: var(--brand); font-size: 1.25rem;
-}
-.siteHeader__tagline{
-  color: var(--muted); font-size: .95rem; margin-top: 2px;
+  height: calc(var(--header-h)); /* inner row remains header height */
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding-inline: 1rem;         /* or whatever you had */
 }
 
-/* push content below header */
-.siteMain{ padding-top: calc(var(--header-h) + 12px); }
+/* Push main content below the fixed header (incl. safe-area) */
+.siteMain{
+  padding-top: calc(var(--header-h) + env(safe-area-inset-top) + 16px);
+}
+
+/* keep the rest of your styles... */
 
 /* Page intro */
 .pageTitle{
