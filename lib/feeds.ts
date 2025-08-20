@@ -1,3 +1,4 @@
+// lib/feeds.ts
 export const FEEDS = {
   political: [
     { source: 'Reuters Politics', url: 'https://www.reuters.com/politics/rss' },
@@ -19,13 +20,11 @@ export const FEEDS = {
     { source: 'Reuters Sports', url: 'https://www.reuters.com/lifestyle/sports/rss' },
     { source: 'BBC Sport', url: 'https://feeds.bbci.co.uk/sport/rss.xml' }
   ],
-  // NEW
   health: [
     { source: 'WHO News', url: 'https://www.who.int/feeds/entity/mediacentre/news/en/rss.xml' },
     { source: 'STAT Health', url: 'https://www.statnews.com/feed/' },
     { source: 'Nature Health', url: 'https://www.nature.com/subjects/health/rss.xml' }
   ],
-  // NEW (society/culture/tech-social)
   social: [
     { source: 'The Verge', url: 'https://www.theverge.com/rss/index.xml' },
     { source: 'Wired Culture', url: 'https://www.wired.com/feed/category/culture/latest/rss' },
