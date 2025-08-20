@@ -1,17 +1,12 @@
+// lib/models.ts
+
 export type Headline = {
   title: string;
-  link: string;
-  source: string;
-  pubDate?: string;
-  image?: string;
-  citations?: number;
+  link: string;            // canonical URL
+  source: string;          // key from FEEDS (e.g., "nyt", "bloomberg")
+  publishedAt?: string;    // ISO string (e.g., item.isoDate)
+  summary?: string;        // item.contentSnippet or similar
+  tickers?: string[];      // optional post-processing
 };
 
-export type BucketedNews = {
-  political: Headline[];
-  financial: Headline[];
-  business: Headline[];
-  sports: Headline[];
-  health: Headline[];
-  social: Headline[];
-};
+export type BucketedNews = Record<string, Headline[]>;
