@@ -1,4 +1,4 @@
-:root { color-scheme: light dark; }
+:root { --brand-color: #0a84ff; } /* set to your logo hex */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 
