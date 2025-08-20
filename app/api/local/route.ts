@@ -10,9 +10,22 @@ import { fetchLocalGoogleNews } from '@lib/fetchers';
 export async function GET(req: Request) {
   const geo = detectGeo(req);
 
-  // Your buildLocalQuery currently returns { query, locale }
-  const { query, locale } = buildLocalQuery(geo);
-  const key = `local_${query}_${locale}`;
+  // Handle both legacy (string) and new ({query, locale}) returns
+  const built = buildLocalQuery(geo) as unknown;
+  let query: string;
+  let locale: string | undefined;
+
+  if (typeof built === 'string') {
+    // Legacy behavior
+    query = built;
+    locale = undefined;
+  } else {
+    const obj = built as { query: string; locale?: string };
+    query = obj.query;
+    locale = obj.locale;
+  }
+
+  const key = `local_${query}_${locale ?? 'NA'}`;
 
   const headlines = await cached(
     key,
