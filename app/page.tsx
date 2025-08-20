@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { fetchAllFeeds } from '@/lib/fetchers';
+import { fetchAllFeeds } from '@lib/fetchers';
 import NewsGrid from '@components/NewsGrid';
 
 export default async function Page() {
