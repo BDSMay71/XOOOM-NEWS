@@ -1,32 +1,29 @@
-import { headers } from 'next/headers';
-import type { LocalGeo } from './types';
+// lib/geo.ts
 
-export async function detectGeo(): Promise<LocalGeo> {
-  const hdrs = headers();
-  const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || hdrs.get('x-real-ip')
-    || hdrs.get('cf-connecting-ip')
-    || '';
-  const base = process.env.GEOIP_BASE_URL || 'https://ipapi.co';
-  try {
-    const r = await fetch(`${base}/${ip || ''}/json/`, { next: { revalidate: 600 } });
-    const j = await r.json();
-    return {
-      ip: ip || j.ip,
-      city: j.city,
-      region: j.region || j.region_code || j.state,
-      country: j.country_name || j.country,
-      countryCode: j.country_code || j.country,
-      timezone: j.timezone
-    };
-  } catch {
-    return { ip };
-  }
+export type Geo = {
+  city?: string;
+  region?: string;
+  country?: string;
+};
+
+/** Pull basic geo from request headers / querystring */
+export function detectGeo(req: Request): Geo {
+  const url = new URL(req.url);
+  // Allow override via query (?city=Austin&region=TX&country=US)
+  const qCity = url.searchParams.get('city') || undefined;
+  const qRegion = url.searchParams.get('region') || undefined;
+  const qCountry = url.searchParams.get('country') || undefined;
+  if (qCity || qRegion || qCountry) return { city: qCity, region: qRegion, country: qCountry };
+
+  // Vercel geo headers (best-effort)
+  const city = req.headers.get('x-vercel-ip-city') || undefined;
+  const region = req.headers.get('x-vercel-ip-country-region') || undefined;
+  const country = req.headers.get('x-vercel-ip-country') || undefined;
+
+  return { city, region, country };
 }
 
-export function buildLocalQuery(geo: LocalGeo) {
-  const parts = [geo.city, geo.region, geo.country].filter(Boolean);
-  const query = parts.length ? `${parts.join(' ')} news` : 'local news';
-  const locale = process.env.GOOGLE_NEWS_LOCALE || 'en-US';
-  return { query, locale };
+/** Build a simple search string for Google News */
+export function buildLocalQuery(geo: Geo): string {
+  return [geo.city, geo.region, geo.country].filter(Boolean).join(' ');
 }
