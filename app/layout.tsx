@@ -11,7 +11,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <header className="siteHeader">
-          <div className="siteHeader__inner">
+          <div className="container siteHeader__inner">
             <div className="siteHeader__brand">XOOOM</div>
             <div className="siteHeader__tagline">news from the world to your street</div>
           </div>
