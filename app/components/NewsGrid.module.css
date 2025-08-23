@@ -1,8 +1,7 @@
 .wrapper { margin-top: 1rem; }
 .categoryBlock { margin-top: 2rem; }
 
-/* Category header (light blue) */
-.categoryHeading {
+.categoryHeading{
   margin: 0 0 1rem;
   text-transform: capitalize;
   font-size: var(--fs-xl);
@@ -21,10 +20,8 @@
 @media (max-width: 1200px){ .columns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 720px){  .columns { grid-template-columns: 1fr; } }
 
-/* Each column stacks one or more "blocks" (subgroups) */
 .column { display: flex; flex-direction: column; gap: 1rem; }
 
-/* Subgroup block (source/league) */
 .blockHeader {
   margin: 0 0 .65rem;
   font-size: var(--fs-lg);
@@ -34,10 +31,8 @@
   padding-left: .5rem;
 }
 
-/* Article list (no bullets) */
 .list { list-style: none; margin: 0; padding: 0; }
 
-/* Article row: thumb + text */
 .item {
   display: grid;
   grid-template-columns: 100px 1fr;
@@ -50,7 +45,6 @@
   border-top: 1px dashed var(--divider);
 }
 
-/* Featured (first item of a block) bigger */
 .featured { grid-template-columns: 140px 1fr; }
 
 .thumb {
@@ -63,7 +57,6 @@
 
 .content { min-width: 0; }
 
-/* Title (white) */
 .link {
   color: var(--text-strong);
   font-weight: 800;
@@ -73,14 +66,12 @@
 }
 .link:hover { text-decoration: underline; }
 
-/* Meta: Source • Date Time */
 .meta {
   font-size: var(--fs-sm);
   color: var(--text-secondary);
   margin-top: .25rem;
 }
 
-/* "More" */
 .moreRow { display: flex; justify-content: center; margin-top: 1rem; }
 .moreBtn {
   border: 1px solid var(--brand-light);
@@ -92,5 +83,4 @@
 
 .empty { margin-top: 2rem; color: var(--text-secondary); }
 
-/* Optional subtle separators for blocks inside a column */
 .block + .block { padding-top: .5rem; border-top: 1px solid var(--divider); }
