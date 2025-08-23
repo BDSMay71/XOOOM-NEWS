@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import styles from './NewsGrid.module.css';
 import type { BucketedNews, Headline } from '@/lib/models';
 import { proxiedThumb, faviconFor } from '@/lib/thumbs';
@@ -57,7 +57,9 @@ function politicalKey(source: string): string {
 }
 
 export default function NewsGrid({ buckets }: Props) {
-  const categories = Object.keys(buckets).sort(
+  // Guard against missing buckets
+  const safeBuckets: BucketedNews = buckets || {};
+  const categories = Object.keys(safeBuckets).sort(
     (a, b) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b)
   );
   if (!categories.length) return <div className={styles.empty}>No feeds loaded yet.</div>;
@@ -65,14 +67,14 @@ export default function NewsGrid({ buckets }: Props) {
   return (
     <div className={styles.wrapper}>
       {categories.map((category) => (
-        <CategorySection key={category} category={category} items={buckets[category] || []} />
+        <CategorySection key={category} category={category} items={safeBuckets[category] || []} />
       ))}
     </div>
   );
 }
 
 function CategorySection({ category, items }: { category: string; items: Headline[] }) {
-  if (items.length === 0) return null;
+  if (!items || items.length === 0) return null;
 
   const displayName = CATEGORY_LABELS[category] ?? category;
 
