@@ -7,13 +7,6 @@ import { proxiedThumb, faviconFor } from '@/lib/thumbs';
 
 type Props = { buckets: BucketedNews };
 
-function groupBy<T, K extends string | number>(arr: T[], getKey: (x: T) => K): Record<K, T[]> {
-  return arr.reduce((acc, item) => {
-    const k = getKey(item);
-    (acc[k] ||= []).push(item);
-    return acc;
-  }, {} as Record<K, T[]>);
-}
 function distribute<T>(items: T[], n: number): T[][] {
   const out = Array.from({ length: n }, () => [] as T[]);
   items.forEach((it, i) => out[i % n].push(it));
@@ -33,8 +26,8 @@ function ts(d?: string): number {
 function sortByImageThenTime(a: Headline, b: Headline): number {
   const ai = a.imageUrl ? 1 : 0;
   const bi = b.imageUrl ? 1 : 0;
-  if (ai !== bi) return bi - ai;
-  return ts(b.publishedAt) - ts(a.publishedAt);
+  if (ai !== bi) return bi - ai; // images first
+  return ts(b.publishedAt) - ts(a.publishedAt); // newest first
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -47,14 +40,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 const CATEGORY_ORDER = ['political', 'financial', 'business', 'sports', 'health', 'social'];
 const DEFAULT_VISIBLE = 10;
-
-// Put AP block first within Political
-function politicalGroupSortKey(title: string): number {
-  if (title === 'AP Politics') return 0;
-  if (title === 'Reuters Politics') return 1;
-  if (title === 'Sky News Politics') return 2;
-  return 3;
-}
 
 export default function NewsGrid({ buckets }: Props) {
   const safeBuckets: BucketedNews = buckets || {};
@@ -77,27 +62,38 @@ function CategorySection({ category, items }: { category: string; items: Headlin
 
   const displayName = CATEGORY_LABELS[category] ?? category;
 
+  // GROUPING
   const groups = useMemo(() => {
     const g = {} as Record<string, Headline[]>;
     for (const h of items) {
       const key = category === 'sports' ? (h.league ?? 'Other') : h.source;
       (g[key] ||= []).push(h);
     }
-    // prefer items with images within each group
     for (const k of Object.keys(g)) g[k] = g[k].slice().sort(sortByImageThenTime);
     return g;
   }, [items, category]);
 
-  // Build blocks (and order AP first in Political)
-  let blocks = Object.entries(groups)
-    .sort(([a], [b]) =>
-      category === 'political'
-        ? politicalGroupSortKey(a) - politicalGroupSortKey(b)
-        : a.localeCompare(b)
-    )
-    .map(([title, arr]) => ({ title, items: arr }));
+  // SPECIAL: Political = AP only; if AP has zero, use Sky only. (Hide if both empty.)
+  let blocks: { title: string; items: Headline[] }[];
 
-  // Ensure 3 columns by splitting if needed
+  if (category === 'political') {
+    const ap = groups['AP Politics'] ?? [];
+    const sky = groups['Sky News Politics'] ?? [];
+    if (ap.length > 0) {
+      blocks = [{ title: 'AP Politics', items: ap }];
+    } else if (sky.length > 0) {
+      blocks = [{ title: 'Sky News Politics', items: sky }];
+    } else {
+      return null; // nothing to show
+    }
+  } else {
+    // Default behavior: show each group (source or league) as its own block
+    blocks = Object.entries(groups)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([title, arr]) => ({ title, items: arr }));
+  }
+
+  // LAYOUT: ensure we always render exactly 3 columns by splitting dominant block(s)
   if (blocks.length === 1) {
     const only = blocks[0];
     const [c1, c2, c3] = splitInto(only.items, 3);
