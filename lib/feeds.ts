@@ -2,7 +2,6 @@
 export const FEEDS = {
   political: [
     { source: 'Reuters Politics', url: 'https://www.reuters.com/politics/rss' },
-    { source: 'BBC World Politics', url: 'https://feeds.bbci.co.uk/news/politics/rss.xml' },
     { source: 'AP Politics', url: 'https://apnews.com/hub/apf-politics?utm_source=rss' },
   ],
   financial: [
