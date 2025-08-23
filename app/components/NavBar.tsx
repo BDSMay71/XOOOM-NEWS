@@ -20,16 +20,11 @@ const NAV: Drop[] = [
     label: 'Sports',
     href: '#sports',
     items: [
-      { label: 'NFL',  href: '#sports' },
-      { label: 'NBA',  href: '#sports' },
-      { label: 'MLB',  href: '#sports' },
-      { label: 'NHL',  href: '#sports' },
-      { label: 'NCAA', href: '#sports' },
-      { label: 'WNBA', href: '#sports' },
-      { label: 'Soccer', href: '#sports' },
-      { label: 'Tennis', href: '#sports' },
-      { label: 'Golf', href: '#sports' },
-      { label: 'F1', href: '#sports' },
+      { label: 'NFL', href: '#sports' }, { label: 'NBA', href: '#sports' },
+      { label: 'MLB', href: '#sports' }, { label: 'NHL', href: '#sports' },
+      { label: 'NCAA', href: '#sports' }, { label: 'WNBA', href: '#sports' },
+      { label: 'Soccer', href: '#sports' }, { label: 'Tennis', href: '#sports' },
+      { label: 'Golf', href: '#sports' }, { label: 'F1', href: '#sports' },
       { label: 'NASCAR', href: '#sports' },
     ],
   },
@@ -39,15 +34,14 @@ const NAV: Drop[] = [
 
 export default function NavBar() {
   const [openId, setOpenId] = useState<string | null>(null);
-  const [menuLeft, setMenuLeft] = useState<number>(0);
+  const [menuLeft, setMenuLeft] = useState<number>(8);
   const btnRef = useRef<HTMLButtonElement | null>(null);
 
   // Close on outside click / escape
   useEffect(() => {
     function onDown(e: MouseEvent) {
       if (!btnRef.current) return;
-      const btn = btnRef.current;
-      if (!btn.contains(e.target as Node)) setOpenId(null);
+      if (!btnRef.current.contains(e.target as Node)) setOpenId(null);
     }
     function onEsc(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpenId(null);
@@ -63,7 +57,8 @@ export default function NavBar() {
   function toggle(id: string, e: React.MouseEvent<HTMLButtonElement>) {
     if (openId === id) return setOpenId(null);
     const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
-    setMenuLeft(rect.left);
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - 240));
+    setMenuLeft(left);
     setOpenId(id);
     btnRef.current = e.currentTarget;
   }
@@ -83,7 +78,7 @@ export default function NavBar() {
               </button>
 
               {openId === item.id && (
-                <div className="dropdownMenu" style={{ left: Math.max(8, Math.min(menuLeft, window.innerWidth - 240)) }}>
+                <div className="dropdownMenu" style={{ left: menuLeft }}>
                   {item.items.map((sub) => (
                     <a
                       key={sub.label}
