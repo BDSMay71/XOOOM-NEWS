@@ -14,9 +14,6 @@ type RSSItem = {
   [key: string]: any; // media:* lands here via customFields
 };
 
-/**
- * Capture media fields so we can pull thumbnails.
- */
 const parser: Parser<RSSItem> = new Parser<RSSItem>({
   timeout: 12000,
   customFields: {
@@ -29,7 +26,7 @@ const parser: Parser<RSSItem> = new Parser<RSSItem>({
   },
 });
 
-/** Try to pull an image URL from common RSS fields */
+/** Extract image from RSS fields */
 function extractImageFromRSS(item: RSSItem): string | undefined {
   const mg = item['media:group'];
   if (mg) {
@@ -67,14 +64,12 @@ function extractImageFromRSS(item: RSSItem): string | undefined {
   return undefined;
 }
 
-/** Fetch OG image from the article page (best-effort, cached by Next) */
+/** Try to fetch og:image from the article page (best-effort, cached) */
 async function fetchOgImage(url: string): Promise<string | undefined> {
   try {
     const res = await fetch(url, {
-      // Cache for an hour on the server to avoid hammering origins
       next: { revalidate: 3600 },
       headers: {
-        // Some sites gate by UA; use a generic desktop UA
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36',
         Accept: 'text/html,application/xhtml+xml',
@@ -82,8 +77,6 @@ async function fetchOgImage(url: string): Promise<string | undefined> {
     });
     if (!res.ok) return undefined;
     const html = await res.text();
-
-    // Try common OG/Twitter tags
     const patterns = [
       /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
       /<meta[^>]+name=["']og:image["'][^>]+content=["']([^"']+)["']/i,
@@ -94,8 +87,6 @@ async function fetchOgImage(url: string): Promise<string | undefined> {
       const m = html.match(re);
       if (m?.[1]) return m[1];
     }
-
-    // Fallback: first <img> on page
     const img = html.match(/<img[^>]+src=["']([^"']+)["']/i);
     if (img?.[1]) return img[1];
   } catch {
@@ -126,7 +117,6 @@ function detectLeague(text: string): string | undefined {
   return undefined;
 }
 
-/** Normalize + fill image with OG fallback when missing */
 async function normalizeItem(
   item: RSSItem,
   source: string,
@@ -137,10 +127,7 @@ async function normalizeItem(
   if (!title || !link) return null;
 
   let imageUrl = extractImageFromRSS(item);
-  if (!imageUrl) {
-    // Try to get og:image from the article page
-    imageUrl = await fetchOgImage(link);
-  }
+  if (!imageUrl) imageUrl = await fetchOgImage(link);
 
   return {
     title,
@@ -150,9 +137,7 @@ async function normalizeItem(
     publishedAt: item.isoDate || item.pubDate,
     summary: undefined,
     imageUrl,
-    league: category === 'sports'
-      ? detectLeague(`${title} ${item.contentSnippet ?? ''}`)
-      : undefined,
+    league: category === 'sports' ? detectLeague(`${title} ${item.contentSnippet ?? ''}`) : undefined,
   };
 }
 
@@ -211,8 +196,6 @@ export async function fetchLocalGoogleNews(
 
   const feed = await parser.parseURL(url);
   const items = feed.items ?? [];
-  const mapped = await Promise.all(
-    items.map((i) => normalizeItem(i, sourceName, category))
-  );
+  const mapped = await Promise.all(items.map((i) => normalizeItem(i, sourceName, category)));
   return mapped.filter((x): x is Headline => Boolean(x));
 }
