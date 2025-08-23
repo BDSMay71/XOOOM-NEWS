@@ -7,11 +7,6 @@ import { faviconFor, proxiedThumb } from '@/lib/thumbs';
 
 const DEFAULT_VISIBLE = 10;
 
-function ts(d?: string) {
-  const t = d ? Date.parse(d) : NaN;
-  return Number.isNaN(t) ? 0 : t;
-}
-
 function distribute<T>(items: T[], n: number): T[][] {
   const out = Array.from({ length: n }, () => [] as T[]);
   items.forEach((it, i) => out[i % n].push(it));
@@ -33,16 +28,20 @@ export default function LocalNewsSection() {
     (async () => {
       try {
         const res = await fetch('/api/local', { cache: 'no-store' });
+        if (res.status === 204) { // no city+state detected → hide section
+          if (!cancel) setItems([]);
+          return;
+        }
         const data = await res.json();
-        if (!cancel) setItems((data.headlines ?? []).sort((a: Headline, b: Headline) => ts(b.publishedAt) - ts(a.publishedAt)));
+        if (!cancel) setItems(data.headlines ?? []);
       } catch {
-        if (!cancel) setItems([]);
+        if (!cancel) setItems([]); // hide on error
       }
     })();
     return () => { cancel = true; };
   }, []);
 
-  if (!items) {
+  if (items === null) {
     return (
       <section id="local" className={styles.categoryBlock}>
         <h2 className={styles.categoryHeading}>Local</h2>
@@ -52,8 +51,12 @@ export default function LocalNewsSection() {
   }
   if (items.length === 0) return null;
 
+  // Split evenly across 3 columns to ensure the layout always fills
   const [c1, c2, c3] = splitInto(items, 3);
-  const columns = distribute([{ title: 'Around You', items: c1 }, { title: 'Around You', items: c2 }, { title: 'Around You', items: c3 }], 3);
+  const columns = distribute(
+    [{ title: 'Around You', items: c1 }, { title: 'Around You', items: c2 }, { title: 'Around You', items: c3 }],
+    3
+  );
 
   return (
     <section id="local" className={styles.categoryBlock}>
