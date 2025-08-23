@@ -14,7 +14,6 @@ function groupBy<T, K extends string | number>(arr: T[], getKey: (x: T) => K): R
     return acc;
   }, {} as Record<K, T[]>);
 }
-
 function distribute<T>(items: T[], n: number): T[][] {
   const out = Array.from({ length: n }, () => [] as T[]);
   items.forEach((it, i) => out[i % n].push(it));
@@ -31,6 +30,12 @@ function ts(d?: string): number {
   const t = d ? Date.parse(d) : NaN;
   return Number.isNaN(t) ? 0 : t;
 }
+function sortByImageThenTime(a: Headline, b: Headline): number {
+  const ai = a.imageUrl ? 1 : 0;
+  const bi = b.imageUrl ? 1 : 0;
+  if (ai !== bi) return bi - ai;
+  return ts(b.publishedAt) - ts(a.publishedAt);
+}
 
 const CATEGORY_LABELS: Record<string, string> = {
   political: 'Political',
@@ -43,12 +48,12 @@ const CATEGORY_LABELS: Record<string, string> = {
 const CATEGORY_ORDER = ['political', 'financial', 'business', 'sports', 'health', 'social'];
 const DEFAULT_VISIBLE = 10;
 
-/** Merge BBC + AP into one subgroup inside Political */
-function politicalKey(source: string): string {
-  if (source === 'BBC World Politics' || source === 'AP Politics') {
-    return 'Independent (BBC + AP)';
-  }
-  return source;
+// Put AP block first within Political
+function politicalGroupSortKey(title: string): number {
+  if (title === 'AP Politics') return 0;
+  if (title === 'Reuters Politics') return 1;
+  if (title === 'Sky News Politics') return 2;
+  return 3;
 }
 
 export default function NewsGrid({ buckets }: Props) {
@@ -75,22 +80,24 @@ function CategorySection({ category, items }: { category: string; items: Headlin
   const groups = useMemo(() => {
     const g = {} as Record<string, Headline[]>;
     for (const h of items) {
-      const key =
-        category === 'sports'
-          ? (h.league ?? 'Other')
-          : category === 'political'
-            ? politicalKey(h.source)
-            : h.source;
+      const key = category === 'sports' ? (h.league ?? 'Other') : h.source;
       (g[key] ||= []).push(h);
     }
-    for (const k of Object.keys(g)) g[k] = g[k].slice().sort((a, b) => ts(b.publishedAt) - ts(a.publishedAt));
+    // prefer items with images within each group
+    for (const k of Object.keys(g)) g[k] = g[k].slice().sort(sortByImageThenTime);
     return g;
   }, [items, category]);
 
+  // Build blocks (and order AP first in Political)
   let blocks = Object.entries(groups)
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) =>
+      category === 'political'
+        ? politicalGroupSortKey(a) - politicalGroupSortKey(b)
+        : a.localeCompare(b)
+    )
     .map(([title, arr]) => ({ title, items: arr }));
 
+  // Ensure 3 columns by splitting if needed
   if (blocks.length === 1) {
     const only = blocks[0];
     const [c1, c2, c3] = splitInto(only.items, 3);
