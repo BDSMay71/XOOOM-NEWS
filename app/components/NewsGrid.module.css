@@ -4,23 +4,23 @@
 .categoryHeading{
   margin: 0 0 1rem;
   text-transform: capitalize;
-  font-size: var(--fs-xl);
+  font-size: 1.4rem;
   line-height: 1.2;
   color: var(--brand-dark);
   border-bottom: 1px solid var(--line);
   padding-bottom: .5rem;
 }
 
-/* Always 3 / 2 / 1 columns */
+/* Always 3 / 2 / 1 columns for subgroup cards */
 .grid{
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.25rem;
 }
-@media (max-width: 1200px){ .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 720px){ .grid{ grid-template-columns: 1fr; } }
+@media (max-width: 1200px){ .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px){  .grid { grid-template-columns: 1fr; } }
 
-/* Each subgroup is a card block */
+/* Subgroup card */
 .card{
   background: var(--card);
   border: 1px solid var(--line);
@@ -29,20 +29,18 @@
   box-shadow: 0 6px 18px rgba(16,24,40,.06);
 }
 
-/* Subgroup heading (source/league) */
 .subHeading{
   margin: 0 0 .65rem;
-  font-size: var(--fs-lg);
+  font-size: 1.1rem;
   line-height: 1.2;
   color: var(--text-strong);
   border-left: 4px solid var(--brand);
   padding-left: .5rem;
 }
 
-/* List reset */
 .list{ list-style: none; margin: 0; padding: 0; }
 
-/* Article rows: thumbnail + text */
+/* Article row: thumb + text */
 .item{
   display: grid;
   grid-template-columns: 96px 1fr;
@@ -58,7 +56,7 @@
 /* Featured row larger */
 .featured{ grid-template-columns: 140px 1fr; }
 
-/* Thumbs */
+/* Thumbnails */
 .thumb{
   width: 96px; height: 96px;
   border-radius: 12px; object-fit: cover;
@@ -75,16 +73,12 @@
   font-weight: 800;
   line-height: 1.28;
   display: inline-block;
-  font-size: var(--fs-md);
 }
 .link:hover{ text-decoration: underline; }
 
-/* Featured title bump */
-.titleLarge{ font-size: var(--fs-lg); }
-
-/* Meta row: Source • Date Time */
+/* Meta under title */
 .meta{
-  font-size: var(--fs-sm);
+  font-size: .875rem;
   color: var(--muted);
   margin-top: .25rem;
 }
