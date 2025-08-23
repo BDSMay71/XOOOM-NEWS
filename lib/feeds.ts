@@ -1,16 +1,15 @@
 // lib/feeds.ts
 export const FEEDS = {
   political: [
-    // AP first = prioritized (we’ll also sort AP block to the top in the grid)
     { source: 'AP Politics', url: 'https://apnews.com/hub/apf-politics?utm_source=rss' },
     { source: 'Reuters Politics', url: 'https://www.reuters.com/politics/rss' },
-    // Sky News Politics (global/UK politics coverage)
     { source: 'Sky News Politics', url: 'https://feeds.skynews.com/feeds/rss/politics.xml' },
   ],
   financial: [
     { source: 'FT Markets', url: 'https://www.ft.com/markets/rss' },
     { source: 'Reuters Markets', url: 'https://www.reuters.com/markets/rss' },
-    { source: 'WSJ Markets', url: 'https://feeds.a.dj.com/rss/RSSMarketsMain.xml' },
+    // Replace WSJ with CNBC Business (broad business/markets feed with robust thumbs)
+    { source: 'CNBC Business', url: 'https://www.cnbc.com/id/10001147/device/rss/rss.html' },
   ],
   business: [
     { source: 'Reuters Business', url: 'https://www.reuters.com/business/rss' },
