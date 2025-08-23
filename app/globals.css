@@ -118,3 +118,9 @@ img { display: block; max-width: 100%; }
 
 .pageTitle { margin: 0; font-size: var(--fs-xl); color: var(--brand-light); }
 .pageSub   { margin: .35rem 0 0; color: var(--text-secondary); font-size: var(--fs-sm); }
+
+/* Make in-page anchors (#political, etc.) land below fixed header+nav */
+.categoryBlock {
+  margin-top: 2rem;
+  scroll-margin-top: calc(var(--header-h) + var(--nav-h) + env(safe-area-inset-top) + 14px);
+}
