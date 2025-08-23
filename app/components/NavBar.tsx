@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 
 type Drop = {
   id: string;
@@ -10,7 +9,6 @@ type Drop = {
   items?: Array<{ label: string; href: `#${string}` }>;
 };
 
-/** Keep this in sync with your sections' ids */
 const NAV: Drop[] = [
   { id: 'local',     label: 'Local',     href: '#local' },
   { id: 'political', label: 'Political', href: '#political' },
@@ -21,8 +19,6 @@ const NAV: Drop[] = [
     label: 'Sports',
     href: '#sports',
     items: [
-      // These still scroll to the Sports section. If you later split by league sections with ids,
-      // change the hrefs to #nfl, #nba, etc.
       { label: 'NFL', href: '#sports' }, { label: 'NBA', href: '#sports' },
       { label: 'MLB', href: '#sports' }, { label: 'NHL', href: '#sports' },
       { label: 'NCAA', href: '#sports' }, { label: 'WNBA', href: '#sports' },
@@ -36,17 +32,13 @@ const NAV: Drop[] = [
 ];
 
 function getOffsetTop(target: HTMLElement) {
-  // Read your CSS vars so this stays in sync with the theme
   const root = getComputedStyle(document.documentElement);
   const headerH = parseInt(root.getPropertyValue('--header-h')) || 64;
   const navH = parseInt(root.getPropertyValue('--nav-h')) || 44;
-
-  // Mobile notch safe-area (iOS)
-  const safe = parseInt(getComputedStyle(document.documentElement).getPropertyValue('padding-top')) || 0;
-
-  const offset = headerH + navH + safe + 14; // match scroll-margin-top extra 14px
+  const safe = 0; // env(safe-area-inset-top) is in CSS; keep 0 here
+  const extra = 14;
   const rectTop = target.getBoundingClientRect().top + window.pageYOffset;
-  return rectTop - offset;
+  return rectTop - (headerH + navH + safe + extra);
 }
 
 function smoothScrollToHash(hash: string) {
@@ -56,6 +48,8 @@ function smoothScrollToHash(hash: string) {
   if (!el) return;
   const top = getOffsetTop(el);
   window.scrollTo({ top, behavior: 'smooth' });
+  // Update URL without native jump
+  history.replaceState(null, '', hash);
 }
 
 export default function NavBar() {
@@ -63,7 +57,6 @@ export default function NavBar() {
   const [menuLeft, setMenuLeft] = useState<number>(8);
   const btnRef = useRef<HTMLButtonElement | null>(null);
 
-  // Close on outside click / escape
   useEffect(() => {
     function onDown(e: MouseEvent) {
       if (!btnRef.current) return;
@@ -80,11 +73,9 @@ export default function NavBar() {
     };
   }, []);
 
-  // If user lands on a hash deep-link, smooth it once after mount
+  // Smooth-scroll if user lands with a hash
   useEffect(() => {
-    if (location.hash) {
-      setTimeout(() => smoothScrollToHash(location.hash), 0);
-    }
+    if (location.hash) setTimeout(() => smoothScrollToHash(location.hash), 0);
   }, []);
 
   function toggle(id: string, e: React.MouseEvent<HTMLButtonElement>) {
@@ -97,12 +88,9 @@ export default function NavBar() {
   }
 
   function onNavClick(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
-    // Make hash navigation reliable under fixed bars
     e.preventDefault();
     setOpenId(null);
     smoothScrollToHash(href);
-    // Update URL hash without jump
-    history.replaceState(null, '', href);
   }
 
   return (
@@ -118,7 +106,6 @@ export default function NavBar() {
               >
                 {item.label} ▾
               </button>
-
               {openId === item.id && (
                 <div className="dropdownMenu" style={{ left: menuLeft }}>
                   {item.items.map((sub) => (
@@ -135,14 +122,14 @@ export default function NavBar() {
               )}
             </div>
           ) : (
-            <Link
+            <a
               key={item.id}
               href={item.href}
               className="navLink"
-              onClick={(e) => onNavClick(e as unknown as React.MouseEvent<HTMLAnchorElement>, item.href)}
+              onClick={(e) => onNavClick(e, item.href)}
             >
               {item.label}
-            </Link>
+            </a>
           )
         )}
       </div>
