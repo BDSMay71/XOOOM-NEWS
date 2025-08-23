@@ -31,32 +31,12 @@ const NAV: Drop[] = [
   { id: 'social', label: 'Culture', href: '#social' },
 ];
 
-function getOffsetTop(target: HTMLElement) {
-  const root = getComputedStyle(document.documentElement);
-  const headerH = parseInt(root.getPropertyValue('--header-h')) || 64;
-  const navH = parseInt(root.getPropertyValue('--nav-h')) || 44;
-  const safe = 0; // env(safe-area-inset-top) is in CSS; keep 0 here
-  const extra = 14;
-  const rectTop = target.getBoundingClientRect().top + window.pageYOffset;
-  return rectTop - (headerH + navH + safe + extra);
-}
-
-function smoothScrollToHash(hash: string) {
-  if (!hash || hash === '#') return;
-  const id = hash.slice(1);
-  const el = document.getElementById(id);
-  if (!el) return;
-  const top = getOffsetTop(el);
-  window.scrollTo({ top, behavior: 'smooth' });
-  // Update URL without native jump
-  history.replaceState(null, '', hash);
-}
-
 export default function NavBar() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [menuLeft, setMenuLeft] = useState<number>(8);
   const btnRef = useRef<HTMLButtonElement | null>(null);
 
+  // Close on outside click / escape
   useEffect(() => {
     function onDown(e: MouseEvent) {
       if (!btnRef.current) return;
@@ -73,11 +53,6 @@ export default function NavBar() {
     };
   }, []);
 
-  // Smooth-scroll if user lands with a hash
-  useEffect(() => {
-    if (location.hash) setTimeout(() => smoothScrollToHash(location.hash), 0);
-  }, []);
-
   function toggle(id: string, e: React.MouseEvent<HTMLButtonElement>) {
     if (openId === id) return setOpenId(null);
     const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
@@ -85,12 +60,6 @@ export default function NavBar() {
     setMenuLeft(left);
     setOpenId(id);
     btnRef.current = e.currentTarget;
-  }
-
-  function onNavClick(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
-    e.preventDefault();
-    setOpenId(null);
-    smoothScrollToHash(href);
   }
 
   return (
@@ -106,6 +75,7 @@ export default function NavBar() {
               >
                 {item.label} ▾
               </button>
+
               {openId === item.id && (
                 <div className="dropdownMenu" style={{ left: menuLeft }}>
                   {item.items.map((sub) => (
@@ -113,7 +83,7 @@ export default function NavBar() {
                       key={sub.label}
                       href={sub.href}
                       className="dropdownItem"
-                      onClick={(e) => onNavClick(e, sub.href)}
+                      onClick={() => setOpenId(null)}
                     >
                       {sub.label}
                     </a>
@@ -126,7 +96,7 @@ export default function NavBar() {
               key={item.id}
               href={item.href}
               className="navLink"
-              onClick={(e) => onNavClick(e, item.href)}
+              onClick={() => setOpenId(null)}
             >
               {item.label}
             </a>
