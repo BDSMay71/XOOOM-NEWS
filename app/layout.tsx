@@ -1,5 +1,6 @@
 import './globals.css';
 import type { ReactNode } from 'react';
+import NavBar from './components/NavBar';
 
 export const viewport = {
   width: 'device-width',
@@ -23,6 +24,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <div className="siteHeader__tagline">news from the world to your street</div>
           </div>
         </header>
+
+        {/* NEW: fixed nav bar */}
+        <NavBar />
+
         <div className="siteMain">{children}</div>
       </body>
     </html>
