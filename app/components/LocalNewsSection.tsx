@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import styles from './NewsGrid.module.css';
 import type { Headline } from '@/lib/models';
 import { faviconFor, proxiedThumb } from '@/lib/thumbs';
@@ -34,7 +34,7 @@ export default function LocalNewsSection() {
       try {
         const res = await fetch('/api/local', { cache: 'no-store' });
         const data = await res.json();
-        if (!cancel) setItems(data.headlines ?? []);
+        if (!cancel) setItems((data.headlines ?? []).sort((a: Headline, b: Headline) => ts(b.publishedAt) - ts(a.publishedAt)));
       } catch {
         if (!cancel) setItems([]);
       }
@@ -52,9 +52,7 @@ export default function LocalNewsSection() {
   }
   if (items.length === 0) return null;
 
-  // Treat Local as a single "block" and split across 3 columns for balance
-  const sorted = [...items].sort((a, b) => ts(b.publishedAt) - ts(a.publishedAt));
-  const [c1, c2, c3] = splitInto(sorted, 3);
+  const [c1, c2, c3] = splitInto(items, 3);
   const columns = distribute([{ title: 'Around You', items: c1 }, { title: 'Around You', items: c2 }, { title: 'Around You', items: c3 }], 3);
 
   return (
