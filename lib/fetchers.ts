@@ -64,24 +64,21 @@ function extractImageFromRSS(item: RSSItem): string | undefined {
   return undefined;
 }
 
-/** Some Google News links carry the real article in ?url=... or require following redirects */
+/** Prefer publisher URL over Google redirect */
 function unwrapGoogleNewsLink(link: string): string {
   try {
     const u = new URL(link);
     if (u.hostname.endsWith('news.google.com')) {
-      // Try url= param first
       const paramUrl = u.searchParams.get('url');
       if (paramUrl) return paramUrl;
-      // If path contains "articles/" but no url param, we’ll follow redirects below.
     }
   } catch {}
   return link;
 }
 
-/** Follow redirects quickly (HEAD first), return the final URL if different */
+/** Follow redirects quickly, return final URL */
 async function resolveFinalUrl(url: string): Promise<string> {
   try {
-    // Try a HEAD to get the final URL without downloading the page
     const head = await fetch(url, {
       method: 'HEAD',
       redirect: 'follow',
@@ -92,13 +89,11 @@ async function resolveFinalUrl(url: string): Promise<string> {
       },
     });
     if (head.url && head.ok) return head.url;
-  } catch {
-    // ignore and fall back
-  }
+  } catch {}
   return url;
 }
 
-/** Try to fetch og:image from the article page (best-effort, cached) */
+/** Fetch og:image from article page (best-effort) */
 async function fetchOgImage(url: string): Promise<string | undefined> {
   try {
     const res = await fetch(url, {
@@ -109,7 +104,6 @@ async function fetchOgImage(url: string): Promise<string | undefined> {
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36',
         Accept: 'text/html,application/xhtml+xml',
         'Accept-Language': 'en-US,en;q=0.9',
-        // A Referer that matches the site helps some paywalled outlets show OG tags
         Referer: new URL(url).origin + '/',
       },
     });
@@ -127,9 +121,7 @@ async function fetchOgImage(url: string): Promise<string | undefined> {
     }
     const img = html.match(/<img[^>]+src=["']([^"']+)["']/i);
     if (img?.[1]) return img[1];
-  } catch {
-    // ignore
-  }
+  } catch {}
   return undefined;
 }
 
@@ -155,6 +147,7 @@ function detectLeague(text: string): string | undefined {
   return undefined;
 }
 
+/** Normalize one RSS item and try hard to fill imageUrl */
 async function normalizeItem(
   item: RSSItem,
   source: string,
@@ -164,16 +157,12 @@ async function normalizeItem(
   const rawLink = item.link?.trim();
   if (!title || !rawLink) return null;
 
-  // 1) Try RSS media first
   let imageUrl = extractImageFromRSS(item);
 
-  // 2) Resolve article link for OG scraping:
-  //    - unwrap Google News redirect
-  //    - follow redirects to publisher url (helps WSJ/others)
+  // Resolve publisher URL for better OG images (especially Google News redirects)
   let link = unwrapGoogleNewsLink(rawLink);
   link = await resolveFinalUrl(link);
 
-  // 3) If still no image, try og:image at the resolved article URL
   if (!imageUrl) imageUrl = await fetchOgImage(link);
 
   return {
@@ -193,6 +182,16 @@ export async function fetchFeed(url: string, source: string, category: string): 
   const items = feed.items ?? [];
   const mapped = await Promise.all(items.map((i) => normalizeItem(i, source, category)));
   return mapped.filter((x): x is Headline => Boolean(x));
+}
+
+/** Sort helper: put items with images first, then by recency */
+function sortByImageThenTime(a: Headline, b: Headline): number {
+  const ai = a.imageUrl ? 1 : 0;
+  const bi = b.imageUrl ? 1 : 0;
+  if (ai !== bi) return bi - ai; // images first
+  const at = a.publishedAt ? Date.parse(a.publishedAt) : 0;
+  const bt = b.publishedAt ? Date.parse(b.publishedAt) : 0;
+  return bt - at; // newest first
 }
 
 export async function fetchAllFeeds(
@@ -228,6 +227,7 @@ export async function fetchCategory(
   return headlines;
 }
 
+/** Google News Local with image-priority ordering */
 export async function fetchLocalGoogleNews(
   query: string,
   opts?: { category?: string; sourceName?: string }
@@ -242,5 +242,9 @@ export async function fetchLocalGoogleNews(
   const feed = await parser.parseURL(url);
   const items = feed.items ?? [];
   const mapped = await Promise.all(items.map((i) => normalizeItem(i, sourceName, category)));
-  return mapped.filter((x): x is Headline => Boolean(x));
+
+  // Prioritize entries that actually have thumbnails, then newest
+  return mapped
+    .filter((x): x is Headline => Boolean(x))
+    .sort(sortByImageThenTime);
 }
