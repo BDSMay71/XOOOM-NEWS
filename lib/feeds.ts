@@ -1,8 +1,11 @@
 // lib/feeds.ts
 export const FEEDS = {
   political: [
-    { source: 'Reuters Politics', url: 'https://www.reuters.com/politics/rss' },
+    // AP first = prioritized (we’ll also sort AP block to the top in the grid)
     { source: 'AP Politics', url: 'https://apnews.com/hub/apf-politics?utm_source=rss' },
+    { source: 'Reuters Politics', url: 'https://www.reuters.com/politics/rss' },
+    // Sky News Politics (global/UK politics coverage)
+    { source: 'Sky News Politics', url: 'https://feeds.skynews.com/feeds/rss/politics.xml' },
   ],
   financial: [
     { source: 'FT Markets', url: 'https://www.ft.com/markets/rss' },
