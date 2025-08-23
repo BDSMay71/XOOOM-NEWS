@@ -64,15 +64,53 @@ function extractImageFromRSS(item: RSSItem): string | undefined {
   return undefined;
 }
 
+/** Some Google News links carry the real article in ?url=... or require following redirects */
+function unwrapGoogleNewsLink(link: string): string {
+  try {
+    const u = new URL(link);
+    if (u.hostname.endsWith('news.google.com')) {
+      // Try url= param first
+      const paramUrl = u.searchParams.get('url');
+      if (paramUrl) return paramUrl;
+      // If path contains "articles/" but no url param, we’ll follow redirects below.
+    }
+  } catch {}
+  return link;
+}
+
+/** Follow redirects quickly (HEAD first), return the final URL if different */
+async function resolveFinalUrl(url: string): Promise<string> {
+  try {
+    // Try a HEAD to get the final URL without downloading the page
+    const head = await fetch(url, {
+      method: 'HEAD',
+      redirect: 'follow',
+      next: { revalidate: 3600 },
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36',
+      },
+    });
+    if (head.url && head.ok) return head.url;
+  } catch {
+    // ignore and fall back
+  }
+  return url;
+}
+
 /** Try to fetch og:image from the article page (best-effort, cached) */
 async function fetchOgImage(url: string): Promise<string | undefined> {
   try {
     const res = await fetch(url, {
       next: { revalidate: 3600 },
+      redirect: 'follow',
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36',
         Accept: 'text/html,application/xhtml+xml',
+        'Accept-Language': 'en-US,en;q=0.9',
+        // A Referer that matches the site helps some paywalled outlets show OG tags
+        Referer: new URL(url).origin + '/',
       },
     });
     if (!res.ok) return undefined;
@@ -123,10 +161,19 @@ async function normalizeItem(
   category: string
 ): Promise<Headline | null> {
   const title = item.title?.trim();
-  const link = item.link?.trim();
-  if (!title || !link) return null;
+  const rawLink = item.link?.trim();
+  if (!title || !rawLink) return null;
 
+  // 1) Try RSS media first
   let imageUrl = extractImageFromRSS(item);
+
+  // 2) Resolve article link for OG scraping:
+  //    - unwrap Google News redirect
+  //    - follow redirects to publisher url (helps WSJ/others)
+  let link = unwrapGoogleNewsLink(rawLink);
+  link = await resolveFinalUrl(link);
+
+  // 3) If still no image, try og:image at the resolved article URL
   if (!imageUrl) imageUrl = await fetchOgImage(link);
 
   return {
@@ -165,9 +212,7 @@ export async function fetchAllFeeds(
   return buckets;
 }
 
-export async function fetchAllBuckets(): Promise<BucketedNews> {
-  return fetchAllFeeds();
-}
+export async function fetchAllBuckets(): Promise<BucketedNews> { return fetchAllFeeds(); }
 
 export async function fetchCategory(
   category: string,
@@ -188,7 +233,7 @@ export async function fetchLocalGoogleNews(
   opts?: { category?: string; sourceName?: string }
 ): Promise<Headline[]> {
   const category = opts?.category ?? 'local';
-  const sourceName = opts?.sourceName ?? 'Google News Local';
+  const sourceName = opts?.sourceName ?? 'Google News (Local)';
   const url =
     'https://news.google.com/rss/search?' +
     `q=${encodeURIComponent(query)}` +
