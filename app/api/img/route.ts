@@ -15,13 +15,11 @@ export async function GET(req: Request) {
   try {
     const upstream = await fetch(url, {
       headers: {
-        // Be polite; some CDNs check UA
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36',
         Accept: 'image/*,*/*;q=0.8',
-        Referer: new URL(url).origin, // helps some anti-hotlink setups
+        Referer: new URL(url).origin,
       },
-      // cache at the edge for 6 hours
       next: { revalidate: 21600 },
     });
 
@@ -30,15 +28,14 @@ export async function GET(req: Request) {
     }
 
     const contentType = upstream.headers.get('content-type') || 'image/jpeg';
-    const res = new NextResponse(upstream.body, {
+    return new NextResponse(upstream.body, {
       status: 200,
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, s-maxage=21600, max-age=3600, stale-while-revalidate=86400',
       },
     });
-    return res;
-  } catch (err) {
+  } catch {
     return bad('Proxy error', 502);
   }
 }
