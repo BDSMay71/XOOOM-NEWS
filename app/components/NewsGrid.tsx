@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import styles from './NewsGrid.module.css';
 import type { BucketedNews, Headline } from '@/lib/models';
 import { proxiedThumb, faviconFor } from '@/lib/thumbs';
@@ -15,14 +15,11 @@ function groupBy<T, K extends string | number>(arr: T[], getKey: (x: T) => K): R
   }, {} as Record<K, T[]>);
 }
 
-/** round-robin distribute an array into N buckets */
 function distribute<T>(items: T[], n: number): T[][] {
   const out = Array.from({ length: n }, () => [] as T[]);
   items.forEach((it, i) => out[i % n].push(it));
   return out;
 }
-
-/** split a list into N chunks (balanced, order-preserving) */
 function splitInto<T>(items: T[], n: number): T[][] {
   if (n <= 1) return [items];
   const out = Array.from({ length: n }, () => [] as T[]);
@@ -30,8 +27,6 @@ function splitInto<T>(items: T[], n: number): T[][] {
   for (const item of items) { out[i].push(item); i = (i + 1) % n; }
   return out;
 }
-
-/** newest first */
 function ts(d?: string): number {
   const t = d ? Date.parse(d) : NaN;
   return Number.isNaN(t) ? 0 : t;
@@ -48,7 +43,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 const CATEGORY_ORDER = ['political', 'financial', 'business', 'sports', 'health', 'social'];
 const DEFAULT_VISIBLE = 10;
 
-/** Map Political sources so BBC + AP share one subgroup title */
+/** Merge BBC + AP into one subgroup inside Political */
 function politicalKey(source: string): string {
   if (source === 'BBC World Politics' || source === 'AP Politics') {
     return 'Independent (BBC + AP)';
@@ -57,7 +52,6 @@ function politicalKey(source: string): string {
 }
 
 export default function NewsGrid({ buckets }: Props) {
-  // Guard against missing buckets
   const safeBuckets: BucketedNews = buckets || {};
   const categories = Object.keys(safeBuckets).sort(
     (a, b) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b)
@@ -78,7 +72,6 @@ function CategorySection({ category, items }: { category: string; items: Headlin
 
   const displayName = CATEGORY_LABELS[category] ?? category;
 
-  // Group by source (or league for sports) — with SPECIAL handling for Political
   const groups = useMemo(() => {
     const g = {} as Record<string, Headline[]>;
     for (const h of items) {
@@ -90,17 +83,14 @@ function CategorySection({ category, items }: { category: string; items: Headlin
             : h.source;
       (g[key] ||= []).push(h);
     }
-    // sort newest first within each group
     for (const k of Object.keys(g)) g[k] = g[k].slice().sort((a, b) => ts(b.publishedAt) - ts(a.publishedAt));
     return g;
   }, [items, category]);
 
-  // Prepare "blocks" = { title, items[] }
   let blocks = Object.entries(groups)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([title, arr]) => ({ title, items: arr }));
 
-  // Ensure we fill 3 columns even with 1–2 groups by splitting the biggest group
   if (blocks.length === 1) {
     const only = blocks[0];
     const [c1, c2, c3] = splitInto(only.items, 3);
@@ -119,7 +109,6 @@ function CategorySection({ category, items }: { category: string; items: Headlin
     ];
   }
 
-  // Distribute blocks across exactly 3 columns (round-robin)
   const columns = distribute(blocks, 3);
 
   return (
