@@ -58,6 +58,7 @@ export default function NewsGrid({ buckets }: Props) {
           <section key={category} className={styles.categoryBlock}>
             <h2 className={styles.categoryHeading}>{displayName}</h2>
 
+            {/* each subgroup renders as one cell → consistent 3/2/1 columns */}
             <div className={styles.grid}>
               {entries.map(([title, items]) => (
                 <GroupCard key={title} title={title} items={items} />
@@ -71,7 +72,7 @@ export default function NewsGrid({ buckets }: Props) {
 }
 
 function GroupCard({ title, items }: { title: string; items: Headline[] }) {
-  // Newest first so featured is most recent
+  // newest first so "featured" is most recent
   const sorted = useMemo(() => [...items].sort((a, b) => ts(b.publishedAt) - ts(a.publishedAt)), [items]);
   const [visible, setVisible] = useState(DEFAULT_VISIBLE);
   const showMore = visible < sorted.length;
