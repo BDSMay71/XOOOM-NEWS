@@ -1,29 +1,23 @@
 /* ===== Theme tokens ===== */
 :root {
-  /* Brand colors */
-  --bg-dark: #071a3d;          /* page background (dark blue) */
-  --brand-light: #5aa7ff;      /* logo/header/subheader light blue */
+  --bg-dark: #071a3d;
+  --brand-light: #5aa7ff;
 
-  /* Text */
-  --text-strong: #ffffff;      /* article titles (white) */
-  --text-secondary: #b9c7e9;   /* meta (source, date) */
+  --text-strong: #ffffff;
+  --text-secondary: #b9c7e9;
 
-  /* Lines / surfaces */
   --divider: rgba(255,255,255,.18);
 
-  /* Layout */
   --container-max: 1400px;
   --header-h: 64px;
-  --nav-h: 44px;               /* NEW: nav bar height */
+  --nav-h: 44px;
 
-  /* Type */
   --fs-xl: 1.5rem;
   --fs-lg: 1.125rem;
   --fs-md: 1rem;
   --fs-sm: .875rem;
 }
 
-/* ===== Base ===== */
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body {
@@ -33,7 +27,7 @@ body {
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overscroll-behavior-y: none; /* mobile rubber-band guard */
+  overscroll-behavior-y: none;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -46,15 +40,13 @@ img { display: block; max-width: 100%; }
   padding-inline: 1.25rem;
 }
 
-/* ===== Fixed Header (safe-area friendly) ===== */
+/* Fixed Header */
 .siteHeader {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 1000;
-
   height: calc(var(--header-h) + env(safe-area-inset-top));
   padding-top: env(safe-area-inset-top);
-
   background: rgba(7, 26, 61, .92);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--divider);
@@ -66,7 +58,7 @@ img { display: block; max-width: 100%; }
 .siteHeader__brand { font-weight: 900; letter-spacing: .4px; color: var(--brand-light); font-size: 1.25rem; }
 .siteHeader__tagline { color: var(--text-secondary); font-size: .95rem; margin-top: 2px; }
 
-/* ===== Fixed Nav Bar (sits under header) ===== */
+/* Fixed Nav under header */
 .siteNav {
   position: fixed;
   top: calc(var(--header-h) + env(safe-area-inset-top));
@@ -82,7 +74,7 @@ img { display: block; max-width: 100%; }
   display: flex;
   align-items: center;
   gap: .75rem;
-  overflow-x: auto;           /* horizontal scroll on small screens */
+  overflow-x: auto;
   scrollbar-width: none;
 }
 .siteNav__inner::-webkit-scrollbar { display: none; }
@@ -100,14 +92,10 @@ img { display: block; max-width: 100%; }
 }
 .navLink:hover, .navButton:hover { border-color: var(--divider); }
 
-/* Dropdown container */
-.dropdown {
-  position: relative;
-}
+.dropdown { position: relative; }
 .dropdownMenu {
-  position: fixed; /* fixed so it doesn't scroll away */
+  position: fixed;
   top: calc(var(--header-h) + var(--nav-h) + env(safe-area-inset-top));
-  /* left gets set inline by the component for proper alignment */
   background: rgba(7, 26, 61, .98);
   border: 1px solid var(--divider);
   border-radius: 10px;
@@ -123,11 +111,10 @@ img { display: block; max-width: 100%; }
 }
 .dropdownItem:hover { background: rgba(90,167,255,.12); }
 
-/* Push content below header + nav (+ safe-area) */
+/* push content below header + nav */
 .siteMain {
   padding-top: calc(var(--header-h) + var(--nav-h) + env(safe-area-inset-top) + 20px);
 }
 
-/* Page intro */
 .pageTitle { margin: 0; font-size: var(--fs-xl); color: var(--brand-light); }
 .pageSub   { margin: .35rem 0 0; color: var(--text-secondary); font-size: var(--fs-sm); }
