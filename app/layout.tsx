@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  viewportFit: 'cover',   // <-- important for env(safe-area-inset-*)
+  viewportFit: 'cover', // for safe-area insets on iOS
 };
 
 export const metadata = {
