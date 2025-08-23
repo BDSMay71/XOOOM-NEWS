@@ -2,7 +2,6 @@
 export function proxiedThumb(src?: string): string | undefined {
   if (!src) return undefined;
   try {
-    // ensure absolute and encode
     const u = new URL(src, 'https://dummy.base/');
     return `/api/img?u=${encodeURIComponent(u.href.replace('https://dummy.base/', ''))}`;
   } catch {
