@@ -9,7 +9,7 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: 'XOOOM — News from the world to your street',
+  title: 'XOOOM — Stories from the globe to your street',
   description: 'Curated local, political, financial, business, sports, health, and culture headlines.',
 };
 
@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <header className="siteHeader">
           <div className="container siteHeader__inner">
             <div className="siteHeader__brand">XOOOM</div>
-            <div className="siteHeader__tagline">news from the world to your street</div>
+            <div className="siteHeader__tagline">Stories from the globe to your street</div>
           </div>
         </header>
 
