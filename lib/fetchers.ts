@@ -6,78 +6,56 @@ import type { BucketedNews, Headline, FeedsByCategory } from './models';
 type RSSItem = {
   title?: string;
   link?: string;
-  // rss-parser will map pubDate/updated/isoDate — prefer isoDate but keep both
   isoDate?: string;
   pubDate?: string;
-  content?: string;           // content:encoded is normalized to `content`
+  content?: string;             // content:encoded normalized to `content`
   contentSnippet?: string;
   enclosure?: { url?: string; type?: string };
-  [key: string]: any;         // for media:* fields
+  [key: string]: any;           // media:* fields land here via customFields
 };
 
 /**
- * IMPORTANT: capture media fields so we can pull thumbnails.
- * `keepArray: true` keeps multiple candidates when present.
+ * Capture media fields so we can pull thumbnails.
+ * keepArray:true preserves multiple candidates.
  */
 const parser: Parser<RSSItem> = new Parser<RSSItem>({
   timeout: 10000,
   customFields: {
     item: [
+      ['media:group', 'media:group', { keepArray: true }],
       ['media:content', 'media:content', { keepArray: true }],
       ['media:thumbnail', 'media:thumbnail', { keepArray: true }],
-      ['media:group', 'media:group', { keepArray: true }],
       ['image', 'image'],
     ],
   },
 });
 
-/** Chicago-local "today or yesterday" gate */
-function isTodayOrYesterday(isoLike?: string, tz = 'America/Chicago') {
-  if (!isoLike) return false;
-  const d = new Date(isoLike);
-  if (Number.isNaN(+d)) return false;
-
-  const fmt = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-
-  const now = new Date();
-  const today = fmt.format(now);
-  const y = new Date(now); y.setDate(now.getDate() - 1);
-  const yesterday = fmt.format(y);
-  const itemDay = fmt.format(d);
-  return itemDay === today || itemDay === yesterday;
-}
-
-/** Try very hard to get an image URL from RSS item */
+/** Try *very* hard to get an image URL from RSS item */
 function extractImage(item: RSSItem): string | undefined {
-  // media:group can hold media:content/thumb variants
+  // media:group → media:content / media:thumbnail
   const mg = item['media:group'];
   if (mg) {
     const arr = Array.isArray(mg) ? mg : [mg];
     for (const g of arr) {
-      if (g?.['media:content']) {
-        const inner = Array.isArray(g['media:content']) ? g['media:content'] : [g['media:content']];
+      const mc = g?.['media:content'];
+      if (mc) {
+        const inner = Array.isArray(mc) ? mc : [mc];
         for (const m of inner) if (m?.url) return String(m.url);
       }
-      if (g?.['media:thumbnail']) {
-        const inner = Array.isArray(g['media:thumbnail']) ? g['media:thumbnail'] : [g['media:thumbnail']];
+      const mt = g?.['media:thumbnail'];
+      if (mt) {
+        const inner = Array.isArray(mt) ? mt : [mt];
         for (const m of inner) if (m?.url) return String(m.url);
       }
     }
   }
 
-  // media:content
+  // media:content / media:thumbnail at item root
   const mc = item['media:content'];
   if (mc) {
     if (Array.isArray(mc)) for (const m of mc) if (m?.url) return String(m.url);
     if (typeof mc === 'object' && mc?.url) return String(mc.url);
   }
-
-  // media:thumbnail
   const mt = item['media:thumbnail'];
   if (mt) {
     if (Array.isArray(mt)) for (const m of mt) if (m?.url) return String(m.url);
@@ -90,16 +68,16 @@ function extractImage(item: RSSItem): string | undefined {
     if (!t || /^image\//i.test(t)) return item.enclosure.url;
   }
 
-  // <img src> inside content
+  // <img src> within content
   const html = item.content ?? '';
   const m = html.match(/<img[^>]+src=["']([^"']+)["']/i);
   if (m?.[1]) return m[1];
 
-  // nothing found
+  // nothing
   return undefined;
 }
 
-/** Sports league detection */
+/** Sports league heuristic */
 function detectLeague(text: string): string | undefined {
   const t = text.toLowerCase();
   if (/(nfl|super bowl|patriots|cowboys|packers|chiefs)/i.test(text)) return 'NFL';
@@ -122,7 +100,7 @@ function detectLeague(text: string): string | undefined {
   return undefined;
 }
 
-/** Normalize + filter to today/yesterday */
+/** Normalize one feed */
 export async function fetchFeed(url: string, source: string, category: string): Promise<Headline[]> {
   const feed = await parser.parseURL(url);
   const items = feed.items ?? [];
@@ -131,7 +109,6 @@ export async function fetchFeed(url: string, source: string, category: string): 
     .map((item): Headline | null => {
       const title = item.title?.trim();
       const link = item.link?.trim();
-      // prefer isoDate; fallback to pubDate
       const published = item.isoDate || item.pubDate;
       if (!title || !link) return null;
 
@@ -141,13 +118,12 @@ export async function fetchFeed(url: string, source: string, category: string): 
         source,
         category,
         publishedAt: published,
-        summary: undefined,                // no verbiage on UI
+        summary: undefined, // UI shows no body text
         imageUrl: extractImage(item),
         league: category === 'sports' ? detectLeague(`${title} ${item.contentSnippet ?? ''}`) : undefined,
       };
     })
-    .filter((x): x is Headline => Boolean(x))
-    .filter((x) => isTodayOrYesterday(x.publishedAt)); // keep only today/yesterday
+    .filter((x): x is Headline => Boolean(x));
 }
 
 export async function fetchAllFeeds(
@@ -183,14 +159,13 @@ export async function fetchCategory(
   return headlines;
 }
 
-/** Google News “local” — also filtered to today/yesterday */
+/** Google News local */
 export async function fetchLocalGoogleNews(
   query: string,
   opts?: { category?: string; sourceName?: string }
 ): Promise<Headline[]> {
   const category = opts?.category ?? 'local';
   const sourceName = opts?.sourceName ?? 'Google News Local';
-
   const url =
     'https://news.google.com/rss/search?' +
     `q=${encodeURIComponent(query)}` +
@@ -216,6 +191,5 @@ export async function fetchLocalGoogleNews(
         imageUrl: extractImage(item),
       };
     })
-    .filter((x): x is Headline => Boolean(x))
-    .filter((x) => isTodayOrYesterday(x.publishedAt));
+    .filter((x): x is Headline => Boolean(x));
 }
