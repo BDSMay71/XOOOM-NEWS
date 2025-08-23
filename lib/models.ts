@@ -8,7 +8,7 @@ export type Headline = {
   publishedAt?: string;
   summary?: string;
   imageUrl?: string;
-  /** for sports only (optional) */
+  /** Optional, used for sports grouping */
   league?: string;
 };
 
