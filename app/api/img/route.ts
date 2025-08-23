@@ -12,14 +12,12 @@ function refererFor(urlStr: string): string {
     const u = new URL(urlStr);
     const host = u.hostname.toLowerCase();
 
-    // Known picky hosts
-    if (host.endsWith('wsj.com') || host.endsWith('images.wsj.net')) return 'https://www.wsj.com/';
+    // Picky hosts (covered)
     if (host.endsWith('cnbcfm.com')) return 'https://www.cnbc.com/';
+    if (host.endsWith('reutersmedia.net') || host.endsWith('reuters.com')) return 'https://www.reuters.com/';
     if (host.endsWith('ft.com')) return 'https://www.ft.com/';
     if (host.endsWith('bbci.co.uk') || host.endsWith('bbc.co.uk')) return 'https://www.bbc.co.uk/';
-    if (host.endsWith('reutersmedia.net') || host.endsWith('reuters.com')) return 'https://www.reuters.com/';
 
-    // Default to origin
     return u.origin + '/';
   } catch {
     return 'https://www.google.com/';
@@ -41,12 +39,10 @@ export async function GET(req: Request) {
         'Accept-Language': 'en-US,en;q=0.9',
       },
       redirect: 'follow',
-      next: { revalidate: 21600 }, // 6h
+      next: { revalidate: 21600 },
     });
 
-    if (!upstream.ok || !upstream.body) {
-      return bad('Upstream fetch failed', 502);
-    }
+    if (!upstream.ok || !upstream.body) return bad('Upstream fetch failed', 502);
 
     const contentType = upstream.headers.get('content-type') || 'image/jpeg';
     return new NextResponse(upstream.body, {
