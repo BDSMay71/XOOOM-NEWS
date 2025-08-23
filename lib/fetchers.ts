@@ -8,18 +8,17 @@ type RSSItem = {
   link?: string;
   isoDate?: string;
   pubDate?: string;
-  content?: string;             // content:encoded normalized to `content`
+  content?: string;
   contentSnippet?: string;
   enclosure?: { url?: string; type?: string };
-  [key: string]: any;           // media:* fields land here via customFields
+  [key: string]: any; // media:* lands here via customFields
 };
 
 /**
  * Capture media fields so we can pull thumbnails.
- * keepArray:true preserves multiple candidates.
  */
 const parser: Parser<RSSItem> = new Parser<RSSItem>({
-  timeout: 10000,
+  timeout: 12000,
   customFields: {
     item: [
       ['media:group', 'media:group', { keepArray: true }],
@@ -30,9 +29,8 @@ const parser: Parser<RSSItem> = new Parser<RSSItem>({
   },
 });
 
-/** Try *very* hard to get an image URL from RSS item */
-function extractImage(item: RSSItem): string | undefined {
-  // media:group → media:content / media:thumbnail
+/** Try to pull an image URL from common RSS fields */
+function extractImageFromRSS(item: RSSItem): string | undefined {
   const mg = item['media:group'];
   if (mg) {
     const arr = Array.isArray(mg) ? mg : [mg];
@@ -49,8 +47,6 @@ function extractImage(item: RSSItem): string | undefined {
       }
     }
   }
-
-  // media:content / media:thumbnail at item root
   const mc = item['media:content'];
   if (mc) {
     if (Array.isArray(mc)) for (const m of mc) if (m?.url) return String(m.url);
@@ -61,23 +57,53 @@ function extractImage(item: RSSItem): string | undefined {
     if (Array.isArray(mt)) for (const m of mt) if (m?.url) return String(m.url);
     if (typeof mt === 'object' && mt?.url) return String(mt.url);
   }
-
-  // enclosure (prefer images)
   if (item.enclosure?.url) {
     const t = item.enclosure.type ?? '';
     if (!t || /^image\//i.test(t)) return item.enclosure.url;
   }
-
-  // <img src> within content
   const html = item.content ?? '';
   const m = html.match(/<img[^>]+src=["']([^"']+)["']/i);
   if (m?.[1]) return m[1];
-
-  // nothing
   return undefined;
 }
 
-/** Sports league heuristic */
+/** Fetch OG image from the article page (best-effort, cached by Next) */
+async function fetchOgImage(url: string): Promise<string | undefined> {
+  try {
+    const res = await fetch(url, {
+      // Cache for an hour on the server to avoid hammering origins
+      next: { revalidate: 3600 },
+      headers: {
+        // Some sites gate by UA; use a generic desktop UA
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml',
+      },
+    });
+    if (!res.ok) return undefined;
+    const html = await res.text();
+
+    // Try common OG/Twitter tags
+    const patterns = [
+      /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
+      /<meta[^>]+name=["']og:image["'][^>]+content=["']([^"']+)["']/i,
+      /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
+      /<meta[^>]+property=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
+    ];
+    for (const re of patterns) {
+      const m = html.match(re);
+      if (m?.[1]) return m[1];
+    }
+
+    // Fallback: first <img> on page
+    const img = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (img?.[1]) return img[1];
+  } catch {
+    // ignore
+  }
+  return undefined;
+}
+
 function detectLeague(text: string): string | undefined {
   const t = text.toLowerCase();
   if (/(nfl|super bowl|patriots|cowboys|packers|chiefs)/i.test(text)) return 'NFL';
@@ -100,30 +126,41 @@ function detectLeague(text: string): string | undefined {
   return undefined;
 }
 
-/** Normalize one feed */
+/** Normalize + fill image with OG fallback when missing */
+async function normalizeItem(
+  item: RSSItem,
+  source: string,
+  category: string
+): Promise<Headline | null> {
+  const title = item.title?.trim();
+  const link = item.link?.trim();
+  if (!title || !link) return null;
+
+  let imageUrl = extractImageFromRSS(item);
+  if (!imageUrl) {
+    // Try to get og:image from the article page
+    imageUrl = await fetchOgImage(link);
+  }
+
+  return {
+    title,
+    link,
+    source,
+    category,
+    publishedAt: item.isoDate || item.pubDate,
+    summary: undefined,
+    imageUrl,
+    league: category === 'sports'
+      ? detectLeague(`${title} ${item.contentSnippet ?? ''}`)
+      : undefined,
+  };
+}
+
 export async function fetchFeed(url: string, source: string, category: string): Promise<Headline[]> {
   const feed = await parser.parseURL(url);
   const items = feed.items ?? [];
-
-  return items
-    .map((item): Headline | null => {
-      const title = item.title?.trim();
-      const link = item.link?.trim();
-      const published = item.isoDate || item.pubDate;
-      if (!title || !link) return null;
-
-      return {
-        title,
-        link,
-        source,
-        category,
-        publishedAt: published,
-        summary: undefined, // UI shows no body text
-        imageUrl: extractImage(item),
-        league: category === 'sports' ? detectLeague(`${title} ${item.contentSnippet ?? ''}`) : undefined,
-      };
-    })
-    .filter((x): x is Headline => Boolean(x));
+  const mapped = await Promise.all(items.map((i) => normalizeItem(i, source, category)));
+  return mapped.filter((x): x is Headline => Boolean(x));
 }
 
 export async function fetchAllFeeds(
@@ -143,7 +180,9 @@ export async function fetchAllFeeds(
   return buckets;
 }
 
-export async function fetchAllBuckets(): Promise<BucketedNews> { return fetchAllFeeds(); }
+export async function fetchAllBuckets(): Promise<BucketedNews> {
+  return fetchAllFeeds();
+}
 
 export async function fetchCategory(
   category: string,
@@ -159,7 +198,6 @@ export async function fetchCategory(
   return headlines;
 }
 
-/** Google News local */
 export async function fetchLocalGoogleNews(
   query: string,
   opts?: { category?: string; sourceName?: string }
@@ -173,23 +211,8 @@ export async function fetchLocalGoogleNews(
 
   const feed = await parser.parseURL(url);
   const items = feed.items ?? [];
-
-  return items
-    .map((item): Headline | null => {
-      const title = item.title?.trim();
-      const link = item.link?.trim();
-      const published = item.isoDate || item.pubDate;
-      if (!title || !link) return null;
-
-      return {
-        title,
-        link,
-        source: sourceName,
-        category,
-        publishedAt: published,
-        summary: undefined,
-        imageUrl: extractImage(item),
-      };
-    })
-    .filter((x): x is Headline => Boolean(x));
+  const mapped = await Promise.all(
+    items.map((i) => normalizeItem(i, sourceName, category))
+  );
+  return mapped.filter((x): x is Headline => Boolean(x));
 }
