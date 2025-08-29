@@ -1,11 +1,8 @@
 // lib/feeds.ts
 export const FEEDS = {
   politics: [
-    // AP’s “Top politics” RSS:
     { source: 'AP Politics', url: 'https://apnews.com/hub/ap-top-politics?output=rss' },
-    // Reuters U.S. politics feed:
     { source: 'Reuters Politics', url: 'https://feeds.reuters.com/USpoliticsNews' },
-
   ],
   financial: [
     { source: 'FT Markets', url: 'https://www.ft.com/markets/rss' },
