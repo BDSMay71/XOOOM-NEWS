@@ -1,6 +1,7 @@
 // lib/feeds.ts
 export const FEEDS = {
   politics: [
+    { source: 'The Hill Politics', url: 'https://thehill.com/feed/' },
     { source: 'Politico', url: 'https://www.politico.com/rss/politics08.xml' },
     { source: 'NPR Politics', url: 'https://feeds.npr.org/1001/rss.xml' },
   ],
