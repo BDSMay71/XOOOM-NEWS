@@ -1,4 +1,3 @@
-import { XOOOM_LOCAL_IMAGE } from '@/lib/placeholders';
 'use client';
 
 import { useEffect, useState } from 'react';
