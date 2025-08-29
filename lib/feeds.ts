@@ -4,10 +4,6 @@ export const FEEDS = {
     { source: 'Politico', url: 'https://www.politico.com/rss/politics08.xml' },
     { source: 'NPR Politics', url: 'https://feeds.npr.org/1001/rss.xml' },
   ],
-} as const;
-    { source: 'AP Politics', url: 'https://apnews.com/hub/ap-top-politics?output=rss' },
-    { source: 'Reuters Politics', url: 'https://feeds.reuters.com/USpoliticsNews' },
-  ],
   financial: [
     { source: 'FT Markets', url: 'https://www.ft.com/markets/rss' },
     { source: 'Reuters Markets', url: 'https://www.reuters.com/markets/rss' },
@@ -35,5 +31,6 @@ export const FEEDS = {
   ],
 } as const;
 
-// how many politics cards to show
-export const SECTION_LIMITS = { politics: 12 } as const;
+export const SECTION_LIMITS = {
+  politics: 20,
+} as const;
