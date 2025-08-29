@@ -1,6 +1,6 @@
 // lib/feeds.ts
 export const FEEDS = {
-  political: [
+  politics: [
     { source: 'AP Politics', url: 'https://apnews.com/hub/apf-politics?utm_source=rss' },
     { source: 'Reuters', url: 'https://feeds.reuters.com/reuters/politicsNews' },
     { source: 'BBC Politics', url: 'http://feeds.bbci.co.uk/news/politics/rss' },
