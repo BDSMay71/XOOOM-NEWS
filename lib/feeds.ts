@@ -5,8 +5,7 @@ export const FEEDS = {
     { source: 'AP Politics', url: 'https://apnews.com/hub/ap-top-politics?output=rss' },
     // Reuters U.S. politics feed:
     { source: 'Reuters Politics', url: 'https://feeds.reuters.com/USpoliticsNews' },
-    // BBC Politics:
-    { source: 'BBC Politics', url: 'https://feeds.bbci.co.uk/news/politics/rss.xml' },
+
   ],
   financial: [
     { source: 'FT Markets', url: 'https://www.ft.com/markets/rss' },
